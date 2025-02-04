@@ -85,3 +85,57 @@ app.delete('/walkers/:id', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+// --- CRUD API for Dogs ---
+
+// 1. Get all dogs
+app.get('/dogs', (req, res) => {
+  const query = 'SELECT * FROM dogs';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.json(results);
+    }
+  });
+});
+
+// 2. Add a new dog
+app.post('/dogs', (req, res) => {
+  const { name, breed, description, imageUrl } = req.body;
+  const query = 'INSERT INTO dogs (name, breed, description, imageUrl) VALUES (?, ?, ?, ?)';
+  db.query(query, [name, breed, description, imageUrl], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(201).json({ id: result.insertId, name, breed, description, imageUrl });
+    }
+  });
+});
+
+// 3. Update dog info
+app.put('/dogs/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, breed, description, imageUrl } = req.body;
+  const query = 'UPDATE dogs SET name = ?, breed = ?, description = ?, imageUrl = ? WHERE id = ?';
+  db.query(query, [name, breed, description, imageUrl, id], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.json({ message: 'Dog updated successfully' });
+    }
+  });
+});
+
+// 4. Delete a dog
+app.delete('/dogs/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM dogs WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.json({ message: 'Dog deleted successfully' });
+    }
+  });
+});
