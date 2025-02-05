@@ -2,17 +2,18 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import WalkersPage from './WalkersPage';
 import DogsPage from './DogsPage';
+import './App.css'; // Import the CSS file
 
 function App() {
   return (
     <Router>
-      <div style={{ padding: '20px' }}>
-        <h1>P40 Underdogs Management</h1>
+      <div className="app-container">
+        <h2 className="app-title">P40 Underdogs Management</h2>
 
         {/* Navigation */}
-        <nav style={{ marginBottom: '20px' }}>
-          <Link to="/" style={{ marginRight: '10px' }}>Walkers</Link>
-          <Link to="/dogs">Dogs</Link>
+        <nav className="app-nav">
+          <Link to="/" className="nav-link">Walkers</Link>
+          <Link to="/dogs" className="nav-link">Dogs</Link>
         </nav>
 
         {/* Routes */}

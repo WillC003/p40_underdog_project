@@ -1,108 +1,215 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../src/dogs.css'; // Import the CSS file from the styles folder
+
+const API_URL = 'http://localhost:5000/dogs';
+
+// Modal for adding and editing a dog
+function DogModal({ isOpen, onClose, onSubmit, initialData, mode }) {
+  const [name, setName] = useState(initialData ? initialData.name : '');
+  const [breed, setBreed] = useState(initialData ? initialData.breed : '');
+  const [description, setDescription] = useState(initialData ? initialData.description : '');
+  const [imageUrl, setImageUrl] = useState(initialData ? initialData.imageUrl : '');
+
+  // Update form fields when modal opens or when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setName(initialData.name);
+      setBreed(initialData.breed);
+      setDescription(initialData.description);
+      setImageUrl(initialData.imageUrl);
+    } else {
+      setName('');
+      setBreed('');
+      setDescription('');
+      setImageUrl('');
+    }
+  }, [initialData, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name || !breed || !description || !imageUrl) {
+      alert('Please fill in all fields');
+      return;
+    }
+    onSubmit({ name, breed, description, imageUrl });
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h2>{mode === 'edit' ? 'Edit Dog' : 'Add New Dog'}</h2>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Breed"
+            value={breed}
+            onChange={(e) => setBreed(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Image URL"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+          />
+          <div className="modal-buttons">
+            <button type="submit" className="modal-submit">
+              {mode === 'edit' ? 'Update Dog' : 'Add Dog'}
+            </button>
+            <button type="button" onClick={onClose} className="modal-cancel">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Modal for confirming deletion
+function DeleteModal({ isOpen, onClose, onConfirm }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h2>Confirm Delete</h2>
+        <p>Are you sure you want to delete this dog?</p>
+        <div className="modal-buttons">
+          <button onClick={onConfirm} className="modal-delete">
+            Delete
+          </button>
+          <button onClick={onClose} className="modal-cancel">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function DogsPage() {
   const [dogs, setDogs] = useState([]);
-  const [name, setName] = useState('');
-  const [breed, setBreed] = useState('');
-  const [description, setDescription] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [isDogModalOpen, setIsDogModalOpen] = useState(false);
+  const [dogModalMode, setDogModalMode] = useState('add'); // 'add' or 'edit'
   const [editingDog, setEditingDog] = useState(null);
-
-  const API_URL = 'http://localhost:5000/dogs';
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [dogToDelete, setDogToDelete] = useState(null);
 
   const fetchDogs = async () => {
-    const response = await axios.get(API_URL);
-    setDogs(response.data);
+    try {
+      const response = await axios.get(API_URL);
+      setDogs(response.data);
+    } catch (error) {
+      console.error('Error fetching dogs:', error);
+    }
   };
 
   useEffect(() => {
     fetchDogs();
   }, []);
 
-  const createDog = async () => {
-    if (!name || !breed || !description || !imageUrl) return alert('Please fill in all fields');
-    await axios.post(API_URL, { name, breed, description, imageUrl });
-    setName('');
-    setBreed('');
-    setDescription('');
-    setImageUrl('');
-    fetchDogs();
-  };
-
-  const updateDog = async () => {
-    if (!name || !breed || !description || !imageUrl) return alert('Please fill in all fields');
-    await axios.put(`${API_URL}/${editingDog.id}`, { name, breed, description, imageUrl });
+  const openAddModal = () => {
+    setDogModalMode('add');
     setEditingDog(null);
-    setName('');
-    setBreed('');
-    setDescription('');
-    setImageUrl('');
-    fetchDogs();
+    setIsDogModalOpen(true);
   };
 
-  const deleteDog = async (id) => {
-    await axios.delete(`${API_URL}/${id}`);
-    fetchDogs();
-  };
-
-  const handleEdit = (dog) => {
+  const openEditModal = (dog) => {
+    setDogModalMode('edit');
     setEditingDog(dog);
-    setName(dog.name);
-    setBreed(dog.breed);
-    setDescription(dog.description);
-    setImageUrl(dog.imageUrl);
+    setIsDogModalOpen(true);
+  };
+
+  const closeDogModal = () => {
+    setIsDogModalOpen(false);
+  };
+
+  const handleDogModalSubmit = async (dogData) => {
+    try {
+      if (dogModalMode === 'add') {
+        await axios.post(API_URL, dogData);
+      } else if (dogModalMode === 'edit' && editingDog) {
+        await axios.put(`${API_URL}/${editingDog.id}`, dogData);
+      }
+      closeDogModal();
+      fetchDogs();
+    } catch (error) {
+      console.error('Error submitting dog data:', error);
+    }
+  };
+
+  const openDeleteModal = (dog) => {
+    setDogToDelete(dog);
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!dogToDelete) return;
+    try {
+      await axios.delete(`${API_URL}/${dogToDelete.id}`);
+      closeDeleteModal();
+      fetchDogs();
+    } catch (error) {
+      console.error('Error deleting dog:', error);
+    }
   };
 
   return (
-    <div>
-      <h2>Dog Management</h2>
-      <input
-        type="text"
-        placeholder="Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        style={{ marginRight: '10px' }}
-      />
-      <input
-        type="text"
-        placeholder="Breed"
-        value={breed}
-        onChange={(e) => setBreed(e.target.value)}
-        style={{ marginRight: '10px' }}
-      />
-      <input
-        type="text"
-        placeholder="Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        style={{ marginRight: '10px' }}
-      />
-      <input
-        type="text"
-        placeholder="Image URL"
-        value={imageUrl}
-        onChange={(e) => setImageUrl(e.target.value)}
-        style={{ marginRight: '10px' }}
-      />
-      {editingDog ? (
-        <button onClick={updateDog}>Update Dog</button>
-      ) : (
-        <button onClick={createDog}>Add Dog</button>
-      )}
-
-      <div style={{ marginTop: '20px' }}>
+    <div className="dogs-page">
+      <header className="header">
+        <h1>Gallery</h1>
+        <button onClick={openAddModal} className="btn add-btn">
+          Add New Dog
+        </button>
+      </header>
+      <div className="gallery">
         {dogs.map((dog) => (
-          <div key={dog.id} style={{ border: '1px solid #ccc', padding: '10px', marginBottom: '10px' }}>
-            <img src={dog.imageUrl} alt={dog.name} style={{ width: '100px', height: '100px', objectFit: 'cover' }} />
-            <h3>{dog.name}</h3>
-            <p><strong>Breed:</strong> {dog.breed}</p>
-            <p><strong>Description:</strong> {dog.description}</p>
-            <button onClick={() => handleEdit(dog)} style={{ marginRight: '5px' }}>Edit</button>
-            <button onClick={() => deleteDog(dog.id)}>Delete</button>
+          <div key={dog.id} className="dog-card">
+            <img src={dog.imageUrl} alt={dog.name} className="dog-image" />
+            <h3 className="dog-name">{dog.name}</h3>
+            <p className="dog-breed">{dog.breed}</p>
+            <div className="card-buttons">
+              <button onClick={() => openEditModal(dog)} className="btn edit-btn">
+                Edit
+              </button>
+              <button onClick={() => openDeleteModal(dog)} className="btn delete-btn">
+                Delete
+              </button>
+            </div>
           </div>
         ))}
       </div>
+      <DogModal
+        isOpen={isDogModalOpen}
+        onClose={closeDogModal}
+        onSubmit={handleDogModalSubmit}
+        initialData={editingDog}
+        mode={dogModalMode}
+      />
+      <DeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }
