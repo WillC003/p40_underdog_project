@@ -1,0 +1,54 @@
+.schedule-container {
+    text-align: center;
+    margin: 20px auto;
+    max-width: 500px;
+  }
+  
+  .react-calendar {
+    width: 100%;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .react-calendar__tile {
+    padding: 15px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .react-calendar__tile--active {
+    background: #800000;
+    color: white;
+  }
+  
+  .event-form {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #800000;
+    border-radius: 8px;
+    background: #f9f9f9;
+  }
+  
+  .event-form input {
+    display: block;
+    width: 90%;
+    margin: 10px auto;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .event-form button {
+    background-color: #800000;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .event-form button:hover {
+    background-color: #600000;
+  }
+  

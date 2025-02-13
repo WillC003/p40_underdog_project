@@ -1,0 +1,77 @@
+/* Restrict styles to Walkers Page */
+.walkers-container {
+  text-align: center;
+  padding: 20px;
+  min-height: 100vh;
+  background-color: #f9f9f9;
+}
+
+.auth-form, .walker-dashboard {
+  max-width: 400px;
+  margin: 0 auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure input styles are scoped */
+.walkers-container input {
+  display: block;
+  width: 90%;
+  padding: 8px;
+  margin: 10px auto;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.walkers-container button {
+  background-color: #800000;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.walkers-container button:hover {
+  background-color: #600000;
+}
+
+.switch-link {
+  color: blue;
+  cursor: pointer;
+}
+
+.logout-button {
+  background: red;
+  margin-top: 10px;
+}
+
+/* Ensure lists are not affecting other pages */
+.walkers-container ul {
+  list-style: none;
+  padding: 0;
+}
+
+.walkers-container ul li {
+  background: #ffe4c4;
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 5px;
+}
+
+.walkers-container ul li button {
+  margin-left: 10px;
+  background: green;
+  color: white;
+  border: none;
+  padding: 5px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.walkers-container ul li button:hover {
+  background: darkgreen;
+}
