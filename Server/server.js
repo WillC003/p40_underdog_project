@@ -3,7 +3,7 @@ const mysql = require('mysql2');
 const cors = require('cors');
 
 const app = express();
-const PORT = 5000;
+const PORT = 8000;
 
 // Middleware
 app.use(cors());           // Allow React to connect to Express
@@ -13,8 +13,28 @@ app.use(express.json());   // Parse JSON bodies
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',        // Your MySQL username
-  password: 'Sam&gracie17',        // Your MySQL password
-  database: 'p40_practice',  // Your database name
+  password: '@Underdog123',        // Your MySQL password
+  database: 'udog',  // Your database name
+});
+
+// Create time_slots table if it doesn't exist
+db.query(`
+  CREATE TABLE IF NOT EXISTS time_slots (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    start_time DATETIME NOT NULL,
+    end_time DATETIME NOT NULL,
+    walker_id INT,
+    status ENUM('available', 'booked', 'completed') DEFAULT 'available',
+    created_by VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (walker_id) REFERENCES walkers(id)
+  )
+`, (err) => {
+  if (err) {
+    console.error('Error creating time_slots table:', err);
+  } else {
+    console.log('Time slots table ready');
+  }
 });
 
 // Connect to MySQL
@@ -136,6 +156,86 @@ app.delete('/dogs/:id', (req, res) => {
       res.status(500).send(err);
     } else {
       res.json({ message: 'Dog deleted successfully' });
+    }
+  });
+});
+
+// --- Time Slots API ---
+
+// 1. Get all time slots
+app.get('/time-slots', (req, res) => {
+  const query = `
+    SELECT ts.*, w.name as walker_name 
+    FROM time_slots ts 
+    LEFT JOIN walkers w ON ts.walker_id = w.id
+    ORDER BY ts.start_time ASC
+  `;
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.json(results);
+    }
+  });
+});
+
+// 2. Create new time slot (for marshals)
+app.post('/time-slots', (req, res) => {
+  const { start_time, end_time, created_by } = req.body;
+  const query = 'INSERT INTO time_slots (start_time, end_time, created_by) VALUES (?, ?, ?)';
+  db.query(query, [start_time, end_time, created_by], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(201).json({ 
+        id: result.insertId, 
+        start_time, 
+        end_time, 
+        created_by,
+        status: 'available' 
+      });
+    }
+  });
+});
+
+// 3. Book a time slot (for walkers)
+app.put('/time-slots/:id/book', (req, res) => {
+  const { id } = req.params;
+  const { walker_id } = req.body;
+  const query = 'UPDATE time_slots SET walker_id = ?, status = "booked" WHERE id = ? AND status = "available"';
+  db.query(query, [walker_id, id], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else if (result.affectedRows === 0) {
+      res.status(400).json({ message: 'Time slot not available' });
+    } else {
+      res.json({ message: 'Time slot booked successfully' });
+    }
+  });
+});
+
+// 4. Cancel a booking
+app.put('/time-slots/:id/cancel', (req, res) => {
+  const { id } = req.params;
+  const query = 'UPDATE time_slots SET walker_id = NULL, status = "available" WHERE id = ? AND status = "booked"';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.json({ message: 'Booking cancelled successfully' });
+    }
+  });
+});
+
+// 5. Get time slots by walker
+app.get('/time-slots/walker/:walkerId', (req, res) => {
+  const { walkerId } = req.params;
+  const query = 'SELECT * FROM time_slots WHERE walker_id = ? ORDER BY start_time ASC';
+  db.query(query, [walkerId], (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.json(results);
     }
   });
 });

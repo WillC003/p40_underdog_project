@@ -7,7 +7,7 @@ function WalkersPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [editingWalker, setEditingWalker] = useState(null);
 
-  const API_URL = 'http://localhost:5000/walkers';
+  const API_URL = 'http://localhost:8000/walkers';
 
   const fetchWalkers = async () => {
     const response = await axios.get(API_URL);
