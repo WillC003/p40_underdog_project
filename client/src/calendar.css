@@ -102,5 +102,90 @@
   .fc-toolbar {
     flex-direction: column;
     gap: 10px;
+  
   }
 } 
+
+/* Event List Container */
+.event-list {
+  margin-top: 20px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Event Title */
+.event-list h3 {
+  text-align: center;
+  color: #800000;
+  font-size: 20px;
+  margin-bottom: 15px;
+}
+
+/* Event List */
+.event-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+/* Event Item */
+.event-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+  transition: background 0.3s;
+  border-radius: 6px;
+}
+
+/* Alternating Background Colors */
+.event-item:nth-child(odd) {
+  background: #f9f9f9;
+}
+
+.event-item:nth-child(even) {
+  background: #ffe4e1;
+}
+
+/* Event Text */
+.event-details {
+  flex: 1;
+  font-size: 16px;
+  color: #333;
+}
+
+/* Buttons */
+.event-actions button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+/* Cancel Button */
+.cancel-btn {
+  background: #ff4444;
+  color: white;
+  margin-right: 5px;
+}
+
+.cancel-btn:hover {
+  background: #cc0000;
+}
+
+/* Delete Button (For Marshals) */
+.delete-btn {
+  background: #800000;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #600000;
+}

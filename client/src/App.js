@@ -19,17 +19,14 @@ function App() {
             <NavLink to="/" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} end>
               Home
             </NavLink>
-            <NavLink to="/walkers" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              Walkers
-            </NavLink>
             <NavLink to="/dogs" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               Dogs
             </NavLink>
             <NavLink to="/marshal-calendar" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              Marshal Calendar
+              Calendar
             </NavLink>
-            <NavLink to="/walker-calendar" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              Walker Calendar
+            <NavLink to="/walkers" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              Login
             </NavLink>
           </div>
         </nav>

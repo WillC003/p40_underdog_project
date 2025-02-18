@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../src/dogs.css'; // Import the CSS file from the styles folder
 
-const API_URL = 'http://localhost:8000/dogs';
+const API_URL = 'http://localhost:5000/dogs';
 
 // Modal for adding and editing a dog
 function DogModal({ isOpen, onClose, onSubmit, initialData, mode }) {

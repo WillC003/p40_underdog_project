@@ -1,0 +1,97 @@
+/* Main container */
+.walkers-container {
+    text-align: center;
+    padding: 20px;
+    min-height: 100vh;
+    background-color: #f9f9f9;
+    font-family: Arial, sans-serif;
+  }
+  
+  /* Auth form (Login & Signup) */
+  .auth-form {
+    max-width: 400px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .auth-form h2 {
+    color: #800000;
+    margin-bottom: 10px;
+  }
+  
+  .auth-form input,
+  .auth-form select {
+    display: block;
+    width: 90%;
+    padding: 10px;
+    margin: 10px auto;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .auth-form select {
+    cursor: pointer;
+  }
+  
+  .auth-form button {
+    background-color: #800000;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    width: 100%;
+    margin-top: 10px;
+  }
+  
+  .auth-form button:hover {
+    background-color: #600000;
+  }
+  
+  /* Switch between Login & Signup */
+  .switch-link {
+    color: blue;
+    cursor: pointer;
+    margin-top: 10px;
+    display: inline-block;
+  }
+  
+  .switch-link:hover {
+    text-decoration: underline;
+  }
+  
+  /* Walker Dashboard */
+  .walker-dashboard {
+    max-width: 400px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .walker-dashboard h2 {
+    color: #800000;
+  }
+  
+  .walker-dashboard p {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  
+  .logout-button {
+    background: red;
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    width: 100%;
+  }
+  
+  .logout-button:hover {
+    background: darkred;
+  }
