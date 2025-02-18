@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -6,7 +6,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import axios from 'axios';
 import './calendar.css';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = 'http://54.242.151.32/api/marshal-calendar';
 
 function CalendarPage() {
   const walker = JSON.parse(localStorage.getItem('walker')) || {};

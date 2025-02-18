@@ -6,14 +6,16 @@ const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = 5000;
 
+
 // Middleware
 app.use(cors());           // Allow React to connect to Express
 app.use(express.json());   // Parse JSON bodies
+app.use(express.urlencoded({ extended: true }));
 
 // MySQL Connection
 const db = mysql.createConnection({
   host: 'localhost',
-  user: 'root',        // Your MySQL username
+  user: 'admin',        // Your MySQL username
   password: 'Sam&gracie17',        // Your MySQL password
   database: 'p40_practice',  // Your database name
 });
@@ -51,7 +53,7 @@ db.connect((err) => {
 // --- CRUD API for Walkers ---
 
 // 1. Get all walkers
-app.get('/walkers', (req, res) => {
+app.get('/api/walkers', (req, res) => {
   const query = 'SELECT * FROM walkers';
   db.query(query, (err, results) => {
     if (err) {
@@ -63,7 +65,7 @@ app.get('/walkers', (req, res) => {
 });
 
 // 2. Add a new walker
-app.post('/walkers', (req, res) => {
+app.post('/api/walkers', (req, res) => {
   const { name, phoneNumber } = req.body;
   const query = 'INSERT INTO walkers (name, phoneNumber) VALUES (?, ?)';
   db.query(query, [name, phoneNumber], (err, result) => {
@@ -76,7 +78,7 @@ app.post('/walkers', (req, res) => {
 });
 
 // 3. Update walker info
-app.put('/walkers/:id', (req, res) => {
+app.put('/api/walkers/:id', (req, res) => {
   const { id } = req.params;
   const { name, phoneNumber } = req.body;
   const query = 'UPDATE walkers SET name = ?, phoneNumber = ? WHERE id = ?';
@@ -90,7 +92,7 @@ app.put('/walkers/:id', (req, res) => {
 });
 
 // 4. Delete a walker
-app.delete('/walkers/:id', (req, res) => {
+app.delete('/api/walkers/:id', (req, res) => {
   const { id } = req.params;
   const query = 'DELETE FROM walkers WHERE id = ?';
   db.query(query, [id], (err, result) => {
@@ -110,7 +112,7 @@ app.listen(PORT, () => {
 // --- CRUD API for Dogs ---
 
 // 1. Get all dogs
-app.get('/dogs', (req, res) => {
+app.get('/api/dogs', (req, res) => {
   const query = 'SELECT * FROM dogs';
   db.query(query, (err, results) => {
     if (err) {
@@ -122,7 +124,7 @@ app.get('/dogs', (req, res) => {
 });
 
 // 2. Add a new dog
-app.post('/dogs', (req, res) => {
+app.post('/api/dogs', (req, res) => {
   const { name, breed, description, imageUrl } = req.body;
   const query = 'INSERT INTO dogs (name, breed, description, imageUrl) VALUES (?, ?, ?, ?)';
   db.query(query, [name, breed, description, imageUrl], (err, result) => {
@@ -135,7 +137,7 @@ app.post('/dogs', (req, res) => {
 });
 
 // 3. Update dog info
-app.put('/dogs/:id', (req, res) => {
+app.put('/api/dogs/:id', (req, res) => {
   const { id } = req.params;
   const { name, breed, description, imageUrl } = req.body;
   const query = 'UPDATE dogs SET name = ?, breed = ?, description = ?, imageUrl = ? WHERE id = ?';
@@ -149,7 +151,7 @@ app.put('/dogs/:id', (req, res) => {
 });
 
 // 4. Delete a dog
-app.delete('/dogs/:id', (req, res) => {
+app.delete('/api/dogs/:id', (req, res) => {
   const { id } = req.params;
   const query = 'DELETE FROM dogs WHERE id = ?';
   db.query(query, [id], (err, result) => {
@@ -162,7 +164,7 @@ app.delete('/dogs/:id', (req, res) => {
 });
 
 // ✅ --- GET All Time Slots ---
-app.get('/time-slots', (req, res) => {
+app.get('/api/time-slots', (req, res) => {
   const query = `
     SELECT ts.id, ts.start_time, ts.end_time, ts.status, 
       COALESCE(
@@ -190,7 +192,7 @@ app.get('/time-slots', (req, res) => {
 });
 
 // ✅ --- CREATE Time Slot (Marshal Only) ---
-app.post('/time-slots', (req, res) => {
+app.post('/api/time-slots', (req, res) => {
   let { start_time, end_time, created_by } = req.body;
 
   if (created_by !== 'marshal') {
@@ -213,7 +215,7 @@ app.post('/time-slots', (req, res) => {
 });
 
 // ✅ --- BOOK a Time Slot (Walker Only) ---
-app.put('/time-slots/:id/book', (req, res) => {
+app.put('/api/time-slots/:id/book', (req, res) => {
   const { id } = req.params;
   const { walker_id, walker_name } = req.body;
 
@@ -241,7 +243,7 @@ app.put('/time-slots/:id/book', (req, res) => {
 });
 
 // ✅ --- DELETE Time Slot (Marshal Only) ---
-app.delete('/time-slots/:id/delete', (req, res) => {
+app.delete('/api/time-slots/:id/delete', (req, res) => {
   const { id } = req.params;
 
   // Delete event and its bookings
@@ -257,7 +259,7 @@ app.delete('/time-slots/:id/delete', (req, res) => {
 });
 
 // ✅ --- CANCEL a Booking (Walker Only) ---
-app.put('/time-slots/:id/cancel', (req, res) => {
+app.put('/api/time-slots/:id/cancel', (req, res) => {
   const { id } = req.params;
   const { walker_id } = req.body;
 
@@ -280,7 +282,7 @@ app.put('/time-slots/:id/cancel', (req, res) => {
 });
 
 // ✅ LOGIN API
-app.post('/login', async (req, res) => {
+app.post('/api/login', async (req, res) => {
   try {
     console.log("Login Request:", req.body);
     const { email, password } = req.body;
@@ -317,7 +319,7 @@ app.post('/login', async (req, res) => {
 });
 
 // ✅ SIGNUP API
-app.post('/signup', async (req, res) => {
+app.post('/api/signup', async (req, res) => {
   try {
     const { name, phoneNumber, email, password, role } = req.body;
 
