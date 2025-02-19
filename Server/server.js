@@ -1,9 +1,16 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+const admin = require('firebase-admin');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+
+// Initialize Firebase Admin
+const serviceAccount = require('./firebase-service-account.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 
 // Middleware
 app.use(cors({
@@ -21,11 +28,11 @@ app.use(express.json());
 
 // MySQL Connection Configuration
 const dbConfig = {
-  host: process.env.DB_HOST || 'ec2-18-217-112-78.us-east-2.compute.amazonaws.com', // Replace with your EC2 public DNS
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '@new-password',
-  database: process.env.DB_NAME || 'udog',
-  port: process.env.DB_PORT || 3306,
+  host: 'localhost',
+  user: 'root',
+  password: 'laptop123',
+  database: 'udog',
+  port: 3306,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -38,15 +45,6 @@ const pool = mysql.createPool(dbConfig);
 pool.getConnection((err, connection) => {
   if (err) {
     console.error('Error connecting to the database:', err);
-    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-      console.error('Database connection was closed.');
-    }
-    if (err.code === 'ER_CON_COUNT_ERROR') {
-      console.error('Database has too many connections.');
-    }
-    if (err.code === 'ECONNREFUSED') {
-      console.error('Database connection was refused.');
-    }
     return;
   }
   
@@ -56,31 +54,12 @@ pool.getConnection((err, connection) => {
   }
 });
 
-// Create time_slots table if it doesn't exist
-pool.query(`
-  CREATE TABLE IF NOT EXISTS time_slots (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    start_time DATETIME NOT NULL,
-    end_time DATETIME NOT NULL,
-    walker_id INT,
-    status ENUM('available', 'booked', 'completed') DEFAULT 'available',
-    created_by VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (walker_id) REFERENCES walkers(id)
-  )
-`, (err) => {
-  if (err) {
-    console.error('Error creating time_slots table:', err);
-  } else {
-    console.log('Time slots table ready');
-  }
-});
-
 // Convert pool query to promise
 const query = (sql, values) => {
   return new Promise((resolve, reject) => {
     pool.query(sql, values, (error, results) => {
       if (error) {
+        console.error('Query error:', error);
         reject(error);
       } else {
         resolve(results);
@@ -89,117 +68,354 @@ const query = (sql, values) => {
   });
 };
 
-// API Routes
-app.get('/walkers', async (req, res) => {
+// Authentication middleware
+const authenticateUser = async (req, res, next) => {
   try {
-    const results = await query('SELECT * FROM walkers');
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
+// Role-based authorization middleware
+const authorizeRoles = (roles) => {
+  return async (req, res, next) => {
+    try {
+      const userRecord = await admin.auth().getUser(req.user.uid);
+      const userSnapshot = await admin.firestore().collection('users').doc(req.user.uid).get();
+      const userData = userSnapshot.data();
+      
+      if (roles.includes(userData.role)) {
+        next();
+    } else {
+        res.status(403).json({ error: 'Unauthorized' });
+      }
+    } catch (error) {
+      res.status(500).json({ error: 'Error checking user role' });
+    }
+  };
+};
+
+// API Routes
+
+// Dogs routes
+app.get('/dogs', authenticateUser, async (req, res) => {
+  try {
+    const results = await query('SELECT * FROM dogs');
     res.json(results);
+  } catch (error) {
+    console.error('Error fetching dogs:', error);
+    res.status(500).json({ error: 'Failed to fetch dogs' });
+  }
+});
+
+app.post('/dogs', authenticateUser, authorizeRoles(['admin', 'marshal']), async (req, res) => {
+  const { name, breed, description, imageUrl } = req.body;
+  try {
+    console.log('Creating dog with data:', { name, breed, description, imageUrl, created_by: req.user.uid });
+
+    if (!name) {
+      return res.status(400).json({ error: 'Dog name is required' });
+    }
+
+    const result = await query(
+      'INSERT INTO dogs (name, breed, description, imageUrl, created_by) VALUES (?, ?, ?, ?, ?)',
+      [name, breed, description, imageUrl, req.user.uid]
+    );
+
+    const newDog = {
+      id: result.insertId,
+      name,
+      breed,
+      description,
+      imageUrl,
+      created_by: req.user.uid
+    };
+
+    console.log('Dog created successfully:', newDog);
+    res.status(201).json(newDog);
+  } catch (error) {
+    console.error('Error creating dog:', error);
+    res.status(500).json({ 
+      error: 'Failed to create dog',
+      details: error.message,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
+  }
+});
+
+// Walkers routes
+app.get('/walkers', authenticateUser, async (req, res) => {
+  try {
+    // Query Firestore to get all users with role 'walker'
+    const usersRef = admin.firestore().collection('users');
+    const snapshot = await usersRef.where('role', '==', 'walker').get();
+    
+    const walkers = [];
+    snapshot.forEach(doc => {
+      walkers.push({
+        id: doc.id,
+        name: doc.data().name,
+        email: doc.data().email,
+        phoneNumber: doc.data().phoneNumber
+      });
+    });
+    
+    res.json(walkers);
   } catch (error) {
     console.error('Error fetching walkers:', error);
     res.status(500).json({ error: 'Failed to fetch walkers' });
   }
 });
 
-app.post('/walkers', async (req, res) => {
-  const { name, phoneNumber } = req.body;
+// Time slots routes
+app.get('/time-slots', authenticateUser, async (req, res) => {
   try {
-    const result = await query('INSERT INTO walkers (name, phoneNumber) VALUES (?, ?)', [name, phoneNumber]);
-    res.status(201).json({ id: result.insertId, name, phoneNumber });
-  } catch (error) {
-    console.error('Error creating walker:', error);
-    res.status(500).json({ error: 'Failed to create walker' });
-  }
-});
-
-app.put('/walkers/:id', async (req, res) => {
-  const { id } = req.params;
-  const { name, phoneNumber } = req.body;
-  try {
-    await query('UPDATE walkers SET name = ?, phoneNumber = ? WHERE id = ?', [name, phoneNumber, id]);
-    res.json({ message: 'Walker updated successfully' });
-  } catch (error) {
-    console.error('Error updating walker:', error);
-    res.status(500).json({ error: 'Failed to update walker' });
-  }
-});
-
-app.delete('/walkers/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    await query('DELETE FROM walkers WHERE id = ?', [id]);
-    res.json({ message: 'Walker deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting walker:', error);
-    res.status(500).json({ error: 'Failed to delete walker' });
-  }
-});
-
-// Time Slots API
-app.get('/time-slots', async (req, res) => {
-  try {
-    const results = await query(`
-      SELECT ts.*, w.name as walker_name 
-      FROM time_slots ts 
-      LEFT JOIN walkers w ON ts.walker_id = w.id
-      ORDER BY ts.start_time ASC
-    `);
-    res.json(results);
+    const slots = await query('SELECT * FROM time_slots ORDER BY start_time ASC');
+    res.json(slots);
   } catch (error) {
     console.error('Error fetching time slots:', error);
     res.status(500).json({ error: 'Failed to fetch time slots' });
   }
 });
 
-app.post('/time-slots', async (req, res) => {
-  const { start_time, end_time, created_by } = req.body;
+app.post('/time-slots', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
+  const { start_time, end_time } = req.body;
+  
   try {
+    console.log('Creating time slot with data:', { start_time, end_time, created_by: req.user.uid });
+
+    // Validate the input
+    if (!start_time || !end_time) {
+      return res.status(400).json({ error: 'Start time and end time are required' });
+    }
+
+    // Insert the time slot
     const result = await query(
-      'INSERT INTO time_slots (start_time, end_time, created_by) VALUES (?, ?, ?)',
-      [start_time, end_time, created_by]
+      'INSERT INTO time_slots (start_time, end_time, status, created_by) VALUES (?, ?, "available", ?)',
+      [start_time, end_time, req.user.uid]
     );
-    res.status(201).json({
+
+    const newSlot = {
       id: result.insertId,
       start_time,
       end_time,
-      created_by,
-      status: 'available'
-    });
+      status: 'available',
+      created_by: req.user.uid
+    };
+
+    console.log('Time slot created successfully:', newSlot);
+    res.status(201).json(newSlot);
   } catch (error) {
     console.error('Error creating time slot:', error);
-    res.status(500).json({ error: 'Failed to create time slot' });
+    res.status(500).json({ 
+      error: 'Failed to create time slot', 
+      details: error.message,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage 
+    });
   }
 });
 
-app.put('/time-slots/:id/book', async (req, res) => {
+app.put('/time-slots/:id/book', authenticateUser, authorizeRoles(['walker']), async (req, res) => {
   const { id } = req.params;
-  const { walker_id } = req.body;
   try {
+    console.log('Attempting to book time slot:', { id, walker_id: req.user.uid });
+    
+    // First check if the slot exists and is available
+    const slot = await query('SELECT * FROM time_slots WHERE id = ?', [id]);
+    if (!slot.length) {
+      return res.status(404).json({ error: 'Time slot not found' });
+    }
+    
+    if (slot[0].status !== 'available') {
+      return res.status(400).json({ error: 'Time slot is not available' });
+    }
+
     const result = await query(
       'UPDATE time_slots SET walker_id = ?, status = "booked" WHERE id = ? AND status = "available"',
-      [walker_id, id]
+      [req.user.uid, id]
     );
+
     if (result.affectedRows === 0) {
-      res.status(400).json({ message: 'Time slot not available' });
-    } else {
-      res.json({ message: 'Time slot booked successfully' });
+      console.error('Failed to book time slot:', { id, walker_id: req.user.uid });
+      return res.status(400).json({ error: 'Time slot not available or already booked' });
     }
+
+    console.log('Time slot booked successfully:', { id, walker_id: req.user.uid });
+    res.json({ message: 'Time slot booked successfully' });
   } catch (error) {
     console.error('Error booking time slot:', error);
-    res.status(500).json({ error: 'Failed to book time slot' });
+    res.status(500).json({ 
+      error: 'Failed to book time slot',
+      details: error.message,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
   }
 });
 
-app.put('/time-slots/:id/cancel', async (req, res) => {
-  const { id } = req.params;
+// Walks routes
+app.get('/walks', authenticateUser, async (req, res) => {
   try {
-    await query(
-      'UPDATE time_slots SET walker_id = NULL, status = "available" WHERE id = ? AND status = "booked"',
-      [id]
-    );
-    res.json({ message: 'Booking cancelled successfully' });
+    const { type, range } = req.query;
+    let sqlQuery = `
+      SELECT 
+        w.*,
+        d.name as dog_name,
+        d.breed as dog_breed,
+        ts.start_time,
+        ts.end_time,
+        ts.walker_id,
+        ts.created_by as marshal_id
+      FROM walks w
+      JOIN dogs d ON w.dog_id = d.id
+      JOIN time_slots ts ON w.time_slot_id = ts.id
+      WHERE 1=1
+    `;
+
+    // Add filters based on type and range
+    const now = new Date().toISOString();
+    if (type === 'upcoming') {
+      sqlQuery += ` AND ts.start_time > '${now}' AND w.status = 'scheduled'`;
+    } else if (type === 'completed') {
+      if (range === 'day') {
+        sqlQuery += ` AND DATE(ts.start_time) = CURDATE() AND w.status = 'completed'`;
+      } else if (range === 'week') {
+        sqlQuery += ` AND ts.start_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND w.status = 'completed'`;
+      } else {
+        sqlQuery += ` AND w.status = 'completed'`;
+      }
+    }
+
+    sqlQuery += ' ORDER BY ts.start_time DESC';
+
+    console.log('Executing walks query:', sqlQuery);
+    const walks = await query(sqlQuery);
+    
+    // Get all unique user IDs from the walks
+    const userIds = new Set();
+    walks.forEach(walk => {
+      if (walk.walker_id) userIds.add(walk.walker_id);
+      if (walk.marshal_id) userIds.add(walk.marshal_id);
+    });
+
+    // Fetch user details from Firestore
+    const userDetails = {};
+    const usersRef = admin.firestore().collection('users');
+    await Promise.all([...userIds].map(async (userId) => {
+      const userDoc = await usersRef.doc(userId).get();
+      if (userDoc.exists) {
+        userDetails[userId] = userDoc.data();
+      }
+    }));
+
+    // Map the walks to include formatted dates and user names
+    const formattedWalks = walks.map(walk => ({
+      ...walk,
+      start_time: new Date(walk.start_time).toISOString(),
+      end_time: new Date(walk.end_time).toISOString(),
+      walker_name: walk.walker_id ? (userDetails[walk.walker_id]?.name || 'Unknown Walker') : null,
+      marshal_name: walk.marshal_id ? (userDetails[walk.marshal_id]?.name || 'Unknown Marshal') : null
+    }));
+
+    res.json(formattedWalks);
   } catch (error) {
-    console.error('Error cancelling booking:', error);
-    res.status(500).json({ error: 'Failed to cancel booking' });
+    console.error('Error fetching walks:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch walks',
+      details: error.message,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
+  }
+});
+
+app.post('/walks', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
+  const { dogId, walkerId, timeSlotId, notes } = req.body;
+  try {
+    console.log('Logging walk with data:', { dogId, walkerId, timeSlotId, notes });
+
+    // Validate required fields
+    if (!dogId || !walkerId || !timeSlotId) {
+      return res.status(400).json({ error: 'Dog ID, walker ID, and time slot ID are required' });
+    }
+
+    // Check if dog exists
+    const dog = await query('SELECT * FROM dogs WHERE id = ?', [dogId]);
+    if (!dog.length) {
+      return res.status(404).json({ error: `Dog with ID ${dogId} not found` });
+    }
+
+    // Check if time slot exists and is booked by the correct walker
+    const timeSlot = await query('SELECT * FROM time_slots WHERE id = ?', [timeSlotId]);
+    if (!timeSlot.length) {
+      return res.status(404).json({ error: `Time slot with ID ${timeSlotId} not found` });
+    }
+    
+    if (timeSlot[0].status !== 'booked') {
+      return res.status(400).json({ error: 'Time slot must be booked before logging a walk' });
+    }
+    
+    if (timeSlot[0].walker_id !== walkerId) {
+      return res.status(400).json({ error: 'This time slot is booked by a different walker' });
+    }
+
+    // Start transaction
+    await query('START TRANSACTION');
+
+    try {
+      // Create the walk record
+      const walkResult = await query(
+        'INSERT INTO walks (dog_id, time_slot_id, notes, status) VALUES (?, ?, ?, "completed")',
+        [dogId, timeSlotId, notes]
+      );
+
+      // Update time slot status to completed
+      const updateResult = await query(
+        'UPDATE time_slots SET status = "completed" WHERE id = ? AND status = "booked" AND walker_id = ?',
+        [timeSlotId, walkerId]
+      );
+
+      if (updateResult.affectedRows === 0) {
+        throw new Error('Failed to update time slot status');
+      }
+
+      // Commit transaction
+      await query('COMMIT');
+
+      const newWalk = {
+        id: walkResult.insertId,
+        dog_id: dogId,
+        time_slot_id: timeSlotId,
+        notes,
+        status: 'completed'
+      };
+
+      console.log('Walk logged successfully:', newWalk);
+      res.status(201).json(newWalk);
+    } catch (error) {
+      // Rollback transaction on error
+      await query('ROLLBACK');
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error logging walk:', error);
+    res.status(500).json({ 
+      error: 'Failed to log walk',
+      details: error.message,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
   }
 });
 
@@ -208,88 +424,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-// Start Server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://0.0.0.0:${PORT}`);
-});
-
-// --- CRUD API for Dogs ---
-
-// 1. Get all dogs
-app.get('/dogs', (req, res) => {
-  const query = 'SELECT * FROM dogs';
-  pool.query(query, (err, results) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.json(results);
-    }
-  });
-});
-
-// 2. Add a new dog
-app.post('/dogs', (req, res) => {
-  const { name, breed, description, imageUrl } = req.body;
-  const query = 'INSERT INTO dogs (name, breed, description, imageUrl) VALUES (?, ?, ?, ?)';
-  pool.query(query, [name, breed, description, imageUrl], (err, result) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.status(201).json({ id: result.insertId, name, breed, description, imageUrl });
-    }
-  });
-});
-
-// 3. Update dog info
-app.put('/dogs/:id', (req, res) => {
-  const { id } = req.params;
-  const { name, breed, description, imageUrl } = req.body;
-  const query = 'UPDATE dogs SET name = ?, breed = ?, description = ?, imageUrl = ? WHERE id = ?';
-  pool.query(query, [name, breed, description, imageUrl, id], (err, result) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.json({ message: 'Dog updated successfully' });
-    }
-  });
-});
-
-// 4. Delete a dog
-app.delete('/dogs/:id', (req, res) => {
-  const { id } = req.params;
-  const query = 'DELETE FROM dogs WHERE id = ?';
-  pool.query(query, [id], (err, result) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.json({ message: 'Dog deleted successfully' });
-    }
-  });
-});
-
-// 5. Get time slots by walker
-app.get('/time-slots/walker/:walkerId', (req, res) => {
-  const { walkerId } = req.params;
-  const query = 'SELECT * FROM time_slots WHERE walker_id = ? ORDER BY start_time ASC';
-  pool.query(query, [walkerId], (err, results) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.json(results);
-    }
-  });
-});
-
 // Test database connection endpoint
 app.get('/test-db', async (req, res) => {
   try {
-    // Try to get a connection from the pool
     const connection = await pool.promise().getConnection();
-    
-    // Test a simple query
     const [rows] = await connection.query('SELECT 1 as value');
-    
-    // Release the connection
     connection.release();
     
     res.json({
@@ -307,4 +446,9 @@ app.get('/test-db', async (req, res) => {
       dbHost: dbConfig.host
     });
   }
+});
+
+// Start Server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
 });

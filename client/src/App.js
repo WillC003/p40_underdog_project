@@ -1,12 +1,86 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, NavLink, Navigate, useNavigate } from 'react-router-dom';
+import { onAuthStateChange, logOut } from './firebase';
 import WalkersPage from './WalkersPage';
 import DogsPage from './DogsPage';
 import CalendarPage from './CalendarPage';
 import HomePage from './HomePage';
+import AdminLogin from './components/AdminLogin';
+import AdminPanel from './components/AdminPanel';
+import AdminReports from './components/AdminReports';
+import MarshalScheduler from './components/MarshalScheduler';
+import WalkerCalendar from './components/WalkerCalendar';
+import Login from './components/Login';
+import Signup from './components/Signup';
 import './App.css'; // Import the CSS file
 
 function App() {
+  const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChange(({ user, role }) => {
+      setUser(user);
+      setUserRole(role);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logOut();
+      // Clear local states
+      setUser(null);
+      setUserRole(null);
+      // Force a complete page reload and clear cache
+      window.location.replace('/');
+      // As a fallback, also clear session storage and local storage
+      sessionStorage.clear();
+      localStorage.clear();
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
+  // Protected Route component
+  const ProtectedRoute = ({ children, allowedRoles }) => {
+    if (loading) {
+      return <div className="loading-screen">Loading...</div>;
+    }
+
+    // Check if user is authenticated
+    if (!user || !user.uid) {
+      console.log('No authenticated user found, redirecting to login');
+      return <Navigate to="/login" replace />;
+    }
+
+    // Check if user has the required role
+    if (!userRole || !allowedRoles.includes(userRole)) {
+      console.log('User does not have required role, redirecting to home');
+      return <Navigate to="/" replace />;
+    }
+
+    return children;
+  };
+
+  // Check if route should be accessible
+  const shouldShowRoute = (requiredRole) => {
+    if (!user || !userRole) return false;
+    return userRole === requiredRole;
+  };
+
   return (
     <Router>
       <div className="app-container">
@@ -15,40 +89,121 @@ function App() {
           <div className="nav-brand">
             <Link to="/" className="brand-link">P40 Underdogs</Link>
           </div>
-          <div className="nav-links">
-            <NavLink to="/" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} end>
-              Home
-            </NavLink>
-            <NavLink to="/walkers" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              Walkers
-            </NavLink>
-            <NavLink to="/dogs" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              Dogs
-            </NavLink>
-            <NavLink to="/marshal-calendar" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              Marshal Calendar
-            </NavLink>
-            <NavLink to="/walker-calendar" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              Walker Calendar
-            </NavLink>
+          <button className="mobile-menu-button" onClick={toggleMobileMenu} aria-label="Toggle menu">
+            <i className="fas fa-bars"></i>
+          </button>
+          <div className={`nav-links ${isMobileMenuOpen ? 'show' : ''}`}>
+            {user ? (
+              <>
+                {userRole === 'walker' && (
+                  <NavLink to="/walker-calendar" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
+                    My Calendar
+                  </NavLink>
+                )}
+                {userRole === 'marshal' && (
+                  <>
+                    <NavLink to="/marshal-calendar" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
+                      Schedule Walks
+                    </NavLink>
+                    <NavLink to="/dogs" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
+                      Dogs
+                    </NavLink>
+                  </>
+                )}
+                {userRole === 'admin' && (
+                  <>
+                    <NavLink to="/admin-panel" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
+                      Admin Panel
+                    </NavLink>
+                    <NavLink to="/admin-reports" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
+                      Reports
+                    </NavLink>
+                    <NavLink to="/dogs" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
+                      Dogs
+                    </NavLink>
+                  </>
+                )}
+                <button onClick={() => { handleLogout(); closeMobileMenu(); }} className="logout-button">
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <NavLink to="/" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu} end>
+                  Home
+                </NavLink>
+                <NavLink to="/login" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
+                  Login
+                </NavLink>
+                <NavLink to="/signup" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
+                  Sign Up
+                </NavLink>
+                <NavLink to="/admin-login" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
+                  Admin Login
+                </NavLink>
+              </>
+            )}
           </div>
         </nav>
 
         {/* Routes */}
         <main className="main-content">
-          <Routes>
+        <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<HomePage />} />
-            <Route path="/walkers" element={<WalkersPage />} />
-            <Route path="/dogs" element={<DogsPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
+            
+            {/* Protected Routes */}
+            <Route 
+              path="/dogs" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'marshal']}>
+                  <DogsPage />
+                </ProtectedRoute>
+              } 
+            />
+            
             <Route 
               path="/marshal-calendar" 
-              element={<CalendarPage userRole="marshal" />} 
+              element={
+                <ProtectedRoute allowedRoles={['marshal']}>
+                  <MarshalScheduler />
+                </ProtectedRoute>
+              } 
             />
+            
             <Route 
               path="/walker-calendar" 
-              element={<CalendarPage userRole="walker" walkerId={1} />} 
+              element={
+                <ProtectedRoute allowedRoles={['walker']}>
+                  <WalkerCalendar />
+                </ProtectedRoute>
+              } 
             />
-          </Routes>
+            
+            <Route 
+              path="/admin-panel" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminPanel />
+                </ProtectedRoute>
+              } 
+            />
+
+            <Route 
+              path="/admin-reports" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminReports />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Catch all route - redirect to home */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
         </main>
 
         {/* Footer */}
@@ -61,8 +216,10 @@ function App() {
             </div>
             <div className="footer-section">
               <h3>Quick Links</h3>
-              <Link to="/walkers" className="footer-link">Our Walkers</Link>
-              <Link to="/dogs" className="footer-link">Dogs</Link>
+              <Link to="/dogs" className="footer-link">Our Dogs</Link>
+              {userRole === 'walker' && (
+                <Link to="/walker-calendar" className="footer-link">My Calendar</Link>
+              )}
             </div>
             <div className="footer-section">
               <h3>Follow Us</h3>

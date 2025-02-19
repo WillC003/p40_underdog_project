@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import '../src/dogs.css'; // Import the CSS file from the styles folder
+import { auth } from './firebase';
+import './dogs.css'; // Import the CSS file from the styles folder
 
 const API_URL = 'http://localhost:8000/dogs';
+
+// Get auth header function
+const getAuthHeader = async () => {
+  const user = auth.currentUser;
+  if (user) {
+    const token = await user.getIdToken();
+    return {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    };
+  }
+  throw new Error('No user logged in');
+};
 
 // Modal for adding and editing a dog
 function DogModal({ isOpen, onClose, onSubmit, initialData, mode }) {
@@ -112,7 +127,8 @@ function DogsPage() {
 
   const fetchDogs = async () => {
     try {
-      const response = await axios.get(API_URL);
+      const authHeader = await getAuthHeader();
+      const response = await axios.get(API_URL, authHeader);
       setDogs(response.data);
     } catch (error) {
       console.error('Error fetching dogs:', error);
@@ -141,10 +157,11 @@ function DogsPage() {
 
   const handleDogModalSubmit = async (dogData) => {
     try {
+      const authHeader = await getAuthHeader();
       if (dogModalMode === 'add') {
-        await axios.post(API_URL, dogData);
+        await axios.post(API_URL, dogData, authHeader);
       } else if (dogModalMode === 'edit' && editingDog) {
-        await axios.put(`${API_URL}/${editingDog.id}`, dogData);
+        await axios.put(`${API_URL}/${editingDog.id}`, dogData, authHeader);
       }
       closeDogModal();
       fetchDogs();
@@ -165,7 +182,8 @@ function DogsPage() {
   const handleDeleteConfirm = async () => {
     if (!dogToDelete) return;
     try {
-      await axios.delete(`${API_URL}/${dogToDelete.id}`);
+      const authHeader = await getAuthHeader();
+      await axios.delete(`${API_URL}/${dogToDelete.id}`, authHeader);
       closeDeleteModal();
       fetchDogs();
     } catch (error) {

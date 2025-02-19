@@ -1,0 +1,421 @@
+.scheduler-container {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.scheduler-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.scheduler-header h2 {
+  color: #800020;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.action-button {
+  background-color: #800020;
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.action-button:hover {
+  background-color: #600018;
+}
+
+.calendar-section {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.calendar-section h3 {
+  color: #800020;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+/* Form Modal */
+.form-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-content h3 {
+  color: #800020;
+  margin-bottom: 1.2rem;
+  text-align: center;
+  font-size: 1.3rem;
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px !important; /* Prevents zoom on mobile */
+  background-color: white;
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #800020;
+  box-shadow: 0 0 0 2px rgba(128, 0, 32, 0.1);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.submit-button,
+.cancel-button {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  min-height: 44px; /* Minimum touch target size */
+}
+
+.submit-button {
+  background-color: #800020;
+  color: white;
+}
+
+.submit-button:hover {
+  background-color: #600018;
+}
+
+.submit-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.cancel-button {
+  background-color: #f8f8f8;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.cancel-button:hover {
+  background-color: #eee;
+}
+
+/* Messages */
+.error-message,
+.success-message {
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.error-message {
+  background-color: #fee;
+  color: #c00;
+}
+
+.success-message {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* FullCalendar Customization */
+.fc {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.fc .fc-toolbar-title {
+  color: #800020;
+  font-size: 1.2rem !important;
+}
+
+.fc .fc-button {
+  padding: 0.5rem 0.8rem;
+  font-size: 0.9rem !important;
+}
+
+.fc .fc-button-primary {
+  background-color: #800020;
+  border-color: #800020;
+}
+
+.fc .fc-button-primary:hover {
+  background-color: #600018;
+  border-color: #600018;
+}
+
+.fc .fc-button-primary:disabled {
+  background-color: #ccc;
+  border-color: #ccc;
+}
+
+.fc-event {
+  cursor: pointer;
+  transition: opacity 0.2s;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.9rem;
+}
+
+.fc-event:hover {
+  opacity: 0.9;
+}
+
+.fc-timegrid-slot {
+  height: 3rem !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .scheduler-container {
+    padding: 0.8rem;
+  }
+
+  .scheduler-header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .action-buttons {
+    justify-content: center;
+  }
+
+  .action-button {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .calendar-section {
+    padding: 0.8rem;
+    margin: 0 -0.8rem;
+    border-radius: 0;
+  }
+
+  .modal-content {
+    padding: 1rem;
+  }
+
+  .modal-buttons {
+    flex-direction: column;
+  }
+
+  .submit-button,
+  .cancel-button {
+    width: 100%;
+  }
+
+  /* FullCalendar mobile optimizations */
+  .fc .fc-toolbar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1.1rem !important;
+  }
+
+  .fc .fc-button {
+    padding: 0.5rem;
+  }
+
+  .fc-header-toolbar {
+    margin-bottom: 0.8rem !important;
+  }
+
+  .fc-timegrid-slot {
+    height: 2.5rem !important;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) {
+  .action-button:hover,
+  .submit-button:hover,
+  .cancel-button:hover,
+  .fc-event:hover {
+    opacity: 0.8;
+  }
+}
+
+/* Add mobile time form styles */
+.mobile-time-form {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-time-form .form-group {
+  margin-bottom: 1.2rem;
+}
+
+.mobile-time-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.mobile-time-form input[type="date"],
+.mobile-time-form select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px !important; /* Prevents zoom on mobile */
+  background-color: white;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 1em;
+  padding-right: 2.5rem;
+}
+
+.mobile-time-form input[type="date"]:focus,
+.mobile-time-form select:focus {
+  outline: none;
+  border-color: #800020;
+  box-shadow: 0 0 0 2px rgba(128, 0, 32, 0.1);
+}
+
+.mobile-time-form .submit-button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #800020;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 1rem;
+  min-height: 44px;
+}
+
+.mobile-time-form .submit-button:hover {
+  background-color: #600018;
+}
+
+.mobile-time-form .submit-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Update media queries */
+@media (max-width: 768px) {
+  .scheduler-container {
+    padding: 0.8rem;
+  }
+
+  .scheduler-header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .action-buttons {
+    justify-content: center;
+  }
+
+  .action-button {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .calendar-section {
+    padding: 0.8rem;
+    margin: 0 -0.8rem;
+    border-radius: 0;
+  }
+
+  .mobile-time-form {
+    padding: 1rem;
+  }
+
+  .mobile-time-form label {
+    font-size: 0.85rem;
+  }
+
+  .mobile-time-form input[type="date"],
+  .mobile-time-form select {
+    padding: 0.5rem;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) {
+  .mobile-time-form .submit-button:active {
+    background-color: #600018;
+  }
+} 

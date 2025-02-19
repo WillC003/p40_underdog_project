@@ -1,106 +1,201 @@
 .calendar-container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 1rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .calendar-wrapper {
-  margin-top: 20px;
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  height: calc(100vh - 200px);
+  min-height: 500px;
+  position: relative;
 }
 
-/* Modal styles */
+/* Custom Toolbar Styles */
+.custom-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.toolbar-group {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.toolbar-group button {
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-group button:hover,
+.toolbar-group button.active {
+  background: #e9ecef;
+}
+
+.toolbar-title {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+/* FullCalendar Overrides */
+.fc {
+  width: 100%;
+  height: 100%;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.fc .fc-timegrid-slot {
+  height: 3em !important;
+}
+
+.fc .fc-timegrid-axis-cushion {
+  font-size: 0.9rem;
+}
+
+.fc .fc-event {
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* Mobile Styles */
+@media screen and (max-width: 768px) {
+  .calendar-container {
+    padding: 0.5rem;
+  }
+
+  .calendar-wrapper {
+    height: calc(100vh - 150px);
+    min-height: 400px;
+  }
+
+  .custom-toolbar {
+    padding: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .toolbar-group button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .toolbar-title {
+    font-size: 1rem;
+    width: 100%;
+    text-align: center;
+    order: -1;
+  }
+
+  .fc .fc-timegrid-slot {
+    height: 2.5em !important;
+  }
+
+  .fc .fc-timegrid-axis-cushion,
+  .fc .fc-timegrid-slot-label-cushion {
+    font-size: 0.8rem;
+  }
+
+  .fc .fc-event {
+    font-size: 0.8rem;
+    padding: 1px 2px;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1.2rem;
+  }
+
+  .fc .fc-timegrid-now-indicator-line {
+    border-color: #dc3545;
+  }
+
+  /* Improve touch targets */
+  .fc .fc-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Small Mobile Styles */
+@media screen and (max-width: 480px) {
+  .calendar-wrapper {
+    height: calc(100vh - 120px);
+    min-height: 350px;
+  }
+
+  .toolbar-group button {
+    padding: 0.25rem;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .fc .fc-timegrid-slot {
+    height: 2em !important;
+  }
+}
+
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   z-index: 1000;
 }
 
 .modal-content {
   background: white;
-  padding: 20px;
+  padding: 1.5rem;
   border-radius: 8px;
-  min-width: 300px;
+  width: 90%;
+  max-width: 400px;
 }
 
 .modal-buttons {
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
 .modal-buttons button {
-  padding: 8px 16px;
+  flex: 1;
+  padding: 0.5rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  min-height: 44px;
 }
 
 .modal-buttons button:first-child {
-  background-color: #4CAF50;
+  background: #007bff;
   color: white;
 }
 
 .modal-buttons button:last-child {
-  background-color: #f44336;
+  background: #6c757d;
   color: white;
-}
-
-/* FullCalendar customizations */
-.fc {
-  font-family: Arial, sans-serif;
-}
-
-.fc-event {
-  cursor: pointer;
-  padding: 2px 4px;
-}
-
-.fc-event-title {
-  font-weight: bold;
-}
-
-.fc-toolbar-title {
-  font-size: 1.5em !important;
-}
-
-.fc-button {
-  background-color: #1a73e8 !important;
-  border-color: #1a73e8 !important;
-}
-
-.fc-button:hover {
-  background-color: #1557b0 !important;
-  border-color: #1557b0 !important;
-}
-
-.fc-day-today {
-  background-color: #e8f0fe !important;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .calendar-container {
-    padding: 10px;
-  }
-  
-  .calendar-wrapper {
-    padding: 10px;
-  }
-  
-  .fc-toolbar {
-    flex-direction: column;
-    gap: 10px;
-  }
 } 

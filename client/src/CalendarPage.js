@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -95,18 +95,95 @@ function CalendarPage({ userRole = 'walker', walkerId }) {
     }
   };
 
+  // Get initial view based on screen size
+  const getInitialView = () => {
+    return window.innerWidth < 768 ? 'timeGridDay' : 'timeGridWeek';
+  };
+
+  const [currentView, setCurrentView] = useState(getInitialView());
+
+  // Update view on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const newView = getInitialView();
+      if (newView !== currentView) {
+        setCurrentView(newView);
+        if (calendarRef.current) {
+          calendarRef.current.getApi().changeView(newView);
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [currentView]);
+
+  // Custom toolbar component
+  const CustomToolbar = ({ calendarRef }) => {
+    const handlePrev = () => {
+      calendarRef.current.getApi().prev();
+    };
+    const handleNext = () => {
+      calendarRef.current.getApi().next();
+    };
+    const handleToday = () => {
+      calendarRef.current.getApi().today();
+    };
+    const handleViewChange = (view) => {
+      setCurrentView(view);
+      calendarRef.current.getApi().changeView(view);
+    };
+
+    const isMobile = window.innerWidth < 768;
+
+    return (
+      <div className="custom-toolbar">
+        <div className="toolbar-title">
+          {calendarRef.current?.getApi().view.title}
+        </div>
+        <div className="toolbar-group">
+          <button onClick={handlePrev}>&lt;</button>
+          <button onClick={handleToday}>Today</button>
+          <button onClick={handleNext}>&gt;</button>
+        </div>
+        {!isMobile && (
+          <div className="toolbar-group">
+            <button 
+              onClick={() => handleViewChange('timeGridDay')}
+              className={currentView === 'timeGridDay' ? 'active' : ''}
+            >
+              Day
+            </button>
+            <button 
+              onClick={() => handleViewChange('timeGridWeek')}
+              className={currentView === 'timeGridWeek' ? 'active' : ''}
+            >
+              Week
+            </button>
+            <button 
+              onClick={() => handleViewChange('dayGridMonth')}
+              className={currentView === 'dayGridMonth' ? 'active' : ''}
+            >
+              Month
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const calendarRef = useRef(null);
+
   return (
     <div className="calendar-container">
       <h2>{userRole === 'marshal' ? 'Marshal Calendar' : 'Walker Calendar'}</h2>
+      <CustomToolbar calendarRef={calendarRef} />
       <div className="calendar-wrapper">
         <FullCalendar
+          ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView="timeGridWeek"
-          headerToolbar={{
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay'
-          }}
+          initialView={currentView}
+          headerToolbar={false}
           editable={false}
           selectable={userRole === 'marshal'}
           selectMirror={true}
@@ -116,6 +193,43 @@ function CalendarPage({ userRole = 'walker', walkerId }) {
           select={handleDateSelect}
           eventClick={handleEventClick}
           height="auto"
+          expandRows={true}
+          stickyHeaderDates={true}
+          handleWindowResize={true}
+          windowResizeDelay={100}
+          timeZone="local"
+          slotMinTime="06:00:00"
+          slotMaxTime="22:00:00"
+          allDaySlot={false}
+          slotDuration="00:30:00"
+          snapDuration="00:30:00"
+          nowIndicator={true}
+          eventDisplay="block"
+          eventOverlap={false}
+          slotEventOverlap={false}
+          views={{
+            timeGridWeek: {
+              titleFormat: { month: 'short', day: 'numeric' },
+              dayHeaderFormat: { weekday: 'short', day: 'numeric' },
+              slotLabelFormat: {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              }
+            },
+            timeGridDay: {
+              titleFormat: { month: 'long', day: 'numeric' },
+              slotLabelFormat: {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              }
+            },
+            dayGridMonth: {
+              titleFormat: { month: 'long', year: 'numeric' },
+              dayHeaderFormat: { weekday: 'short' }
+            }
+          }}
         />
       </div>
 
