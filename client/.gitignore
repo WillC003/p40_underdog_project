@@ -5,6 +5,10 @@
 /.pnp
 .pnp.js
 
+*.docx
+.DS_Store
+*.pdf
+*.webp
 # testing
 /coverage
 
