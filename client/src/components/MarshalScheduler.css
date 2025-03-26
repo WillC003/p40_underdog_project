@@ -72,6 +72,27 @@
   padding: 1rem;
 }
 
+.booked-walkers {
+  background-color: #f8f9fa;
+  border: 1px solid #ccc;
+  padding: 15px;
+  margin-top: 20px;
+  border-radius: 6px;
+}
+
+.delete-button {
+  background-color: #d9534f;
+  color: white;
+  border: none;
+  padding: 10px;
+  margin-left: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background-color: #c9302c;
+}
 .modal-content {
   background: white;
   padding: 1.5rem;

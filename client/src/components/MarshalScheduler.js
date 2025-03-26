@@ -17,6 +17,10 @@ function MarshalScheduler() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [selectedWalkers, setSelectedWalkers] = useState([]);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedBookingSlot, setSelectedBookingSlot] = useState(null);
+
 
   // New state for dog form
   const [newDog, setNewDog] = useState({
@@ -392,9 +396,76 @@ function MarshalScheduler() {
             allDaySlot={false}
             slotDuration="00:30:00"
             snapDuration="00:30:00"
+            eventClick={async (info) => {
+              try {
+                const authHeader = await getAuthHeader();
+                const res = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots/${info.event.id}/bookings`, authHeader);
+                setSelectedWalkers(res.data);
+                setSelectedBookingSlot(info.event); // Save slot for deletion
+                setShowBookingModal(true);
+              } catch (err) {
+                console.error('Failed to load bookings', err);
+                setError('Could not load walkers for this slot');
+              }
+            }}
           />
         )}
       </div>
+
+
+      {showBookingModal && selectedBookingSlot && (
+  <div className="form-modal">
+    <div className="modal-content">
+      <h3>Walkers Booked for Slot</h3>
+      <p>
+        <strong>Start:</strong> {new Date(selectedBookingSlot.start).toLocaleString()}<br />
+        <strong>End:</strong> {new Date(selectedBookingSlot.end).toLocaleString()}
+      </p>
+
+      {selectedWalkers.length === 0 ? (
+        <p>No walkers booked for this time slot.</p>
+      ) : (
+        <ul>
+          {selectedWalkers.map((walker) => (
+            <li key={walker.id}>
+              {walker.name} ({walker.email})
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="modal-buttons">
+        <button
+          className="cancel-button"
+          onClick={() => setShowBookingModal(false)}
+        >
+          Close
+        </button>
+        <button
+          className="delete-button"
+          onClick={async () => {
+            if (window.confirm('Are you sure you want to delete this walk?')) {
+              try {
+                const authHeader = await getAuthHeader();
+                await axios.delete(`${process.env.REACT_APP_API_URL}/time-slots/${selectedBookingSlot.id}`, authHeader);
+                setSuccess('Time slot deleted.');
+                setShowBookingModal(false);
+                fetchTimeSlots();
+              } catch (err) {
+                console.error('Error deleting time slot:', err);
+                setError('Failed to delete time slot');
+              }
+            }
+          }}
+        >
+          Delete Time Slot
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
 
       {selectedSlot && (
   <div className="form-modal">

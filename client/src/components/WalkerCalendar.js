@@ -43,16 +43,15 @@ function WalkerCalendar() {
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots`, authHeader);
       
       const formattedSlots = response.data
-       .filter(slot => slot.status === 'available' || slot.status === 'booked')
+      .filter(slot => slot.status === 'available' || slot.status === 'booked')
        .map(slot => ({
         id: slot.id,
         title: slot.status === 'booked' ? 'Booked' : 'Available',
         start: new Date(slot.start_time),
         end: new Date(slot.end_time),
-        color: slot.status === 'booked' ? '#FFA500' : '#800020', // orange for booked, maroon for available
+        color: slot.status === 'booked' ? '#FFA500' : '#800020',
         extendedProps: {
-          status: slot.status,
-          isBooked: slot.status === 'booked'
+          status: slot.status
         }
       }));
       
@@ -148,15 +147,12 @@ function WalkerCalendar() {
             initialView="timeGridWeek"
             selectable={false}
             eventClick={(info) => {
-              const isBooked = info.event.extendedProps.status === 'booked';
-              if (isBooked) {
-                alert('This time slot is already booked.');
-                return;
+              if (info.event.extendedProps.status === 'booked') {
+                if (!window.confirm('This time slot is partially booked. Would you like to try booking it?')) return;
+              } else {
+                if (!window.confirm('Would you like to book this time slot?')) return;
               }
-            
-              if (window.confirm('Would you like to book this time slot?')) {
-                handleBookSlot(info.event.id);
-              }
+              handleBookSlot(info.event.id);
             }}
             dayMaxEvents={true}
             weekends={true}

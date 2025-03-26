@@ -227,39 +227,67 @@ app.post('/time-slots', authenticateUser, authorizeRoles(['marshal']), async (re
 
 app.put('/time-slots/:id/book', authenticateUser, authorizeRoles(['walker']), async (req, res) => {
   const { id } = req.params;
+  const walkerId = req.user.uid;
+
   try {
-    console.log('Attempting to book time slot:', { id, walker_id: req.user.uid });
-    
-    // First check if the slot exists and is available
+    // Check if time slot exists and is available or booked
     const slot = await query('SELECT * FROM time_slots WHERE id = ?', [id]);
-    if (!slot.length) {
-      return res.status(404).json({ error: 'Time slot not found' });
-    }
-    
-    if (slot[0].status !== 'available') {
-      return res.status(400).json({ error: 'Time slot is not available' });
-    }
+    if (!slot.length) return res.status(404).json({ error: 'Time slot not found' });
 
-    const result = await query(
-      'UPDATE time_slots SET walker_id = ?, status = "booked" WHERE id = ? AND status = "available"',
-      [req.user.uid, id]
+    // Check how many walkers already booked
+    const existing = await query('SELECT COUNT(*) AS count FROM time_slot_bookings WHERE time_slot_id = ?', [id]);
+    if (existing[0].count >= 4) return res.status(400).json({ error: 'Time slot is fully booked' });
+
+    // Prevent duplicate booking
+    const alreadyBooked = await query(
+      'SELECT * FROM time_slot_bookings WHERE time_slot_id = ? AND walker_id = ?',
+      [id, walkerId]
     );
+    if (alreadyBooked.length > 0) return res.status(400).json({ error: 'You already booked this slot' });
 
-    if (result.affectedRows === 0) {
-      console.error('Failed to book time slot:', { id, walker_id: req.user.uid });
-      return res.status(400).json({ error: 'Time slot not available or already booked' });
+    // Add booking
+    await query('INSERT INTO time_slot_bookings (time_slot_id, walker_id) VALUES (?, ?)', [id, walkerId]);
+
+    // Update time slot status to booked (if it was available)
+    if (slot[0].status === 'available') {
+      await query('UPDATE time_slots SET status = "booked" WHERE id = ?', [id]);
     }
 
-    console.log('Time slot booked successfully:', { id, walker_id: req.user.uid });
-    res.json({ message: 'Time slot booked successfully' });
+    res.json({ message: 'Booking successful' });
   } catch (error) {
-    console.error('Error booking time slot:', error);
-    res.status(500).json({ 
-      error: 'Failed to book time slot',
-      details: error.message,
-      sqlState: error.sqlState,
-      sqlMessage: error.sqlMessage
-    });
+    console.error('Booking error:', error);
+    res.status(500).json({ error: 'Failed to book time slot' });
+  }
+});
+
+app.get('/time-slots/:id/bookings', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const bookings = await query('SELECT walker_id FROM time_slot_bookings WHERE time_slot_id = ?', [id]);
+
+    const usersRef = admin.firestore().collection('users');
+    const walkers = await Promise.all(bookings.map(async (b) => {
+      const doc = await usersRef.doc(b.walker_id).get();
+      return doc.exists ? { id: b.walker_id, ...doc.data() } : null;
+    }));
+
+    res.json(walkers.filter(w => w !== null));
+  } catch (error) {
+    console.error('Failed to fetch slot bookings:', error);
+    res.status(500).json({ error: 'Could not load bookings' });
+  }
+});
+
+app.delete('/time-slots/:id', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await query('DELETE FROM time_slots WHERE id = ?', [id]);
+    res.json({ message: 'Time slot deleted' });
+  } catch (error) {
+    console.error('Error deleting time slot:', error);
+    res.status(500).json({ error: 'Failed to delete time slot' });
   }
 });
 
