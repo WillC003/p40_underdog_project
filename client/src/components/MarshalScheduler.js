@@ -183,6 +183,49 @@ function MarshalScheduler() {
     }
   };
 
+
+  const formatDateTimeForMySQL = (dateInput) => {
+    const date = new Date(dateInput); // Ensure it's a Date object
+    const pad = (n) => n.toString().padStart(2, '0');
+    const yyyy = date.getFullYear();
+    const MM = pad(date.getMonth() + 1);
+    const dd = pad(date.getDate());
+    const HH = pad(date.getHours());
+    const mm = pad(date.getMinutes());
+    const ss = pad(date.getSeconds());
+    return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
+  };
+  const handleCalendarSlotSubmit = async () => {
+    if (!selectedSlot?.start || !selectedSlot?.end) {
+      setError('Start and end time are required');
+      return;
+    }
+  
+    setLoading(true);
+    setError('');
+    setSuccess('');
+  
+    try {
+      const authHeader = await getAuthHeader();
+      await axios.post(
+        `${process.env.REACT_APP_API_URL}/time-slots`,
+        {
+          start_time: formatDateTimeForMySQL(selectedSlot.start),
+          end_time: formatDateTimeForMySQL(selectedSlot.end)
+        },
+        authHeader
+      );
+  
+      setSuccess('Time slot added successfully!');
+      setSelectedSlot(null);
+      fetchTimeSlots();
+    } catch (err) {
+      console.error('Error adding slot from calendar:', err.response?.data || err);
+      setError(err.response?.data?.error || 'Failed to add time slot');
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleAddDog = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -354,25 +397,25 @@ function MarshalScheduler() {
       </div>
 
       {selectedSlot && (
-        <div className="form-modal">
-          <div className="modal-content">
-            <h3>Add Time Slot</h3>
-            <p>
-              Start: {selectedSlot.start}
-              <br />
-              End: {selectedSlot.end}
-            </p>
-            <div className="modal-buttons">
-              <button onClick={() => setSelectedSlot(null)} className="cancel-button">
-                Cancel
-              </button>
-              <button onClick={handleMobileTimeSlotSubmit} disabled={loading} className="submit-button">
-                {loading ? 'Adding...' : 'Add Time Slot'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+  <div className="form-modal">
+    <div className="modal-content">
+      <h3>Add Time Slot</h3>
+      <p>
+        Start: {selectedSlot.start}
+        <br />
+        End: {selectedSlot.end}
+      </p>
+      <div className="modal-buttons">
+        <button onClick={() => setSelectedSlot(null)} className="cancel-button">
+          Cancel
+        </button>
+        <button onClick={handleCalendarSlotSubmit} disabled={loading} className="submit-button">
+          {loading ? 'Adding...' : 'Add Time Slot'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {showAddDogForm && (
         <div className="form-modal">

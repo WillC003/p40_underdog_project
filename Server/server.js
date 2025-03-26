@@ -7,7 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // Initialize Firebase Admin
-const serviceAccount = require('./firebase-service-account.json');
+const serviceAccount = require('./firebase-service-account.example.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
@@ -30,7 +30,7 @@ app.use(express.json());
 const dbConfig = {
   host: 'localhost',
   user: 'root',
-  password: 'laptop123',
+  password: 'Sam&gracie17',
   database: 'udog',
   port: 3306,
   waitForConnections: true,
@@ -190,38 +190,37 @@ app.get('/time-slots', authenticateUser, async (req, res) => {
 
 app.post('/time-slots', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
   const { start_time, end_time } = req.body;
-  
-  try {
-    console.log('Creating time slot with data:', { start_time, end_time, created_by: req.user.uid });
 
-    // Validate the input
-    if (!start_time || !end_time) {
-      return res.status(400).json({ error: 'Start time and end time are required' });
+  console.log('Received time slot:', {
+    start_time,
+    end_time,
+    user: req.user || 'No user found'
+  });
+
+  try {
+    if (!start_time || !end_time || !req.user?.uid) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Insert the time slot
     const result = await query(
       'INSERT INTO time_slots (start_time, end_time, status, created_by) VALUES (?, ?, "available", ?)',
       [start_time, end_time, req.user.uid]
     );
 
-    const newSlot = {
+    res.status(201).json({
       id: result.insertId,
       start_time,
       end_time,
       status: 'available',
       created_by: req.user.uid
-    };
-
-    console.log('Time slot created successfully:', newSlot);
-    res.status(201).json(newSlot);
+    });
   } catch (error) {
     console.error('Error creating time slot:', error);
-    res.status(500).json({ 
-      error: 'Failed to create time slot', 
+    res.status(500).json({
+      error: 'Failed to create time slot',
       details: error.message,
       sqlState: error.sqlState,
-      sqlMessage: error.sqlMessage 
+      sqlMessage: error.sqlMessage
     });
   }
 });
