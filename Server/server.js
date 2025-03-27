@@ -368,81 +368,33 @@ app.get('/walks', authenticateUser, async (req, res) => {
 });
 
 app.post('/walks', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
-  const { dogId, walkerId, timeSlotId, notes } = req.body;
+  const { timeSlotId, walkerIds, dogIds, notes } = req.body;
+
+  if (!timeSlotId || !walkerIds?.length || !dogIds?.length) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
   try {
-    console.log('Logging walk with data:', { dogId, walkerId, timeSlotId, notes });
-
-    // Validate required fields
-    if (!dogId || !walkerId || !timeSlotId) {
-      return res.status(400).json({ error: 'Dog ID, walker ID, and time slot ID are required' });
-    }
-
-    // Check if dog exists
-    const dog = await query('SELECT * FROM dogs WHERE id = ?', [dogId]);
-    if (!dog.length) {
-      return res.status(404).json({ error: `Dog with ID ${dogId} not found` });
-    }
-
-    // Check if time slot exists and is booked by the correct walker
-    const timeSlot = await query('SELECT * FROM time_slots WHERE id = ?', [timeSlotId]);
-    if (!timeSlot.length) {
-      return res.status(404).json({ error: `Time slot with ID ${timeSlotId} not found` });
-    }
-    
-    if (timeSlot[0].status !== 'booked') {
-      return res.status(400).json({ error: 'Time slot must be booked before logging a walk' });
-    }
-    
-    if (timeSlot[0].walker_id !== walkerId) {
-      return res.status(400).json({ error: 'This time slot is booked by a different walker' });
-    }
-
-    // Start transaction
     await query('START TRANSACTION');
 
-    try {
-      // Create the walk record
+    for (const dogId of dogIds) {
       const walkResult = await query(
         'INSERT INTO walks (dog_id, time_slot_id, notes, status) VALUES (?, ?, ?, "completed")',
-        [dogId, timeSlotId, notes]
+        [dogId, timeSlotId, notes || '']
       );
-
-      // Update time slot status to completed
-      const updateResult = await query(
-        'UPDATE time_slots SET status = "completed" WHERE id = ? AND status = "booked" AND walker_id = ?',
-        [timeSlotId, walkerId]
-      );
-
-      if (updateResult.affectedRows === 0) {
-        throw new Error('Failed to update time slot status');
-      }
-
-      // Commit transaction
-      await query('COMMIT');
-
-      const newWalk = {
-        id: walkResult.insertId,
-        dog_id: dogId,
-        time_slot_id: timeSlotId,
-        notes,
-        status: 'completed'
-      };
-
-      console.log('Walk logged successfully:', newWalk);
-      res.status(201).json(newWalk);
-    } catch (error) {
-      // Rollback transaction on error
-      await query('ROLLBACK');
-      throw error;
     }
-  } catch (error) {
-    console.error('Error logging walk:', error);
-    res.status(500).json({ 
-      error: 'Failed to log walk',
-      details: error.message,
-      sqlState: error.sqlState,
-      sqlMessage: error.sqlMessage
-    });
+
+    await query(
+      'UPDATE time_slots SET status = "completed" WHERE id = ?',
+      [timeSlotId]
+    );
+
+    await query('COMMIT');
+    res.status(201).json({ message: 'Walk finalized' });
+  } catch (err) {
+    await query('ROLLBACK');
+    console.error('Walk finalize error:', err);
+    res.status(500).json({ error: 'Failed to finalize walk' });
   }
 });
 
@@ -472,6 +424,67 @@ app.get('/test-db', async (req, res) => {
       error: error.message,
       dbHost: dbConfig.host
     });
+  }
+});
+
+app.post('/time-slots/:id/assign-dogs', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
+  const { dogIds } = req.body;
+  const { id } = req.params;
+
+  if (!dogIds || !Array.isArray(dogIds)) {
+    return res.status(400).json({ error: 'dogIds array is required' });
+  }
+
+  try {
+    await query('DELETE FROM time_slot_dogs WHERE time_slot_id = ?', [id]);
+
+    for (const dogId of dogIds) {
+      await query('INSERT INTO time_slot_dogs (time_slot_id, dog_id) VALUES (?, ?)', [id, dogId]);
+    }
+
+    res.json({ message: 'Dogs assigned to time slot' });
+  } catch (err) {
+    console.error('Failed to assign dogs:', err);
+    res.status(500).json({ error: 'Failed to assign dogs' });
+  }
+});
+
+app.get('/time-slots/:id/assigned-dogs', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const dogs = await query(
+      `SELECT d.id, d.name, d.breed, d.description
+       FROM time_slot_dogs tsd
+       JOIN dogs d ON tsd.dog_id = d.id
+       WHERE tsd.time_slot_id = ?`,
+      [id]
+    );
+
+    res.json(dogs);
+  } catch (err) {
+    console.error('Failed to fetch assigned dogs:', err);
+    res.status(500).json({ error: 'Could not load dogs for this slot' });
+  }
+});
+
+app.get('/upcoming-walks', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
+  try {
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const slots = await query(`
+      SELECT 
+        ts.id, ts.start_time, ts.end_time, ts.status, 
+        u.name AS marshal_name
+      FROM time_slots ts
+      JOIN users u ON u.uid = ts.created_by
+      WHERE ts.start_time > ? 
+      ORDER BY ts.start_time ASC
+    `, [now]);
+
+    res.json(slots);
+  } catch (error) {
+    console.error('Error fetching upcoming time slots:', error);
+    res.status(500).json({ error: 'Failed to fetch upcoming walks' });
   }
 });
 

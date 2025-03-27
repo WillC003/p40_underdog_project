@@ -5,10 +5,15 @@ import './AdminReports.css';
 
 function AdminReports() {
   const [walks, setWalks] = useState([]);
-  const [reportType, setReportType] = useState('upcoming'); // upcoming or completed
-  const [timeRange, setTimeRange] = useState('day'); // day, week, total
+  const [reportType, setReportType] = useState('upcoming');
+  const [timeRange, setTimeRange] = useState('day');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedWalk, setSelectedWalk] = useState(null);
+  const [showWalkModal, setShowWalkModal] = useState(false);
+  const [assigningSlot, setAssigningSlot] = useState(null);
+  const [availableDogs, setAvailableDogs] = useState([]);
+  const [selectedDogIds, setSelectedDogIds] = useState([]);
 
   const getAuthHeader = async () => {
     const user = auth.currentUser;
@@ -16,8 +21,8 @@ function AdminReports() {
       const token = await user.getIdToken();
       return {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       };
     }
     throw new Error('No user logged in');
@@ -28,12 +33,12 @@ function AdminReports() {
     setError('');
     try {
       const authHeader = await getAuthHeader();
-      console.log('Fetching walks with params:', { type: reportType, range: timeRange });
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/walks`, {
-        ...authHeader,
-        params: { type: reportType, range: timeRange }
-      });
-      console.log('Walks data received:', response.data);
+      const response = reportType === 'upcoming'
+  ? await axios.get(`${process.env.REACT_APP_API_URL}/upcoming-walks`, authHeader)
+  : await axios.get(`${process.env.REACT_APP_API_URL}/walks`, {
+      ...authHeader,
+      params: { type: reportType, range: timeRange }
+    });
       setWalks(response.data);
     } catch (err) {
       console.error('Error fetching walks:', err.response?.data || err);
@@ -47,34 +52,14 @@ function AdminReports() {
     fetchWalks();
   }, [reportType, timeRange]);
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString();
-  };
-
-  const getStatusBadgeClass = (status) => {
-    switch (status) {
-      case 'scheduled':
-        return 'status-badge scheduled';
-      case 'completed':
-        return 'status-badge completed';
-      case 'cancelled':
-        return 'status-badge cancelled';
-      default:
-        return 'status-badge';
-    }
-  };
-
   return (
     <div className="reports-container">
       <h2>Walk Reports</h2>
-      
+
       <div className="report-controls">
         <div className="control-group">
           <label>Report Type:</label>
-          <select 
-            value={reportType} 
-            onChange={(e) => setReportType(e.target.value)}
-          >
+          <select value={reportType} onChange={(e) => setReportType(e.target.value)}>
             <option value="upcoming">Upcoming Walks</option>
             <option value="completed">Completed Walks</option>
           </select>
@@ -83,10 +68,7 @@ function AdminReports() {
         {reportType === 'completed' && (
           <div className="control-group">
             <label>Time Range:</label>
-            <select 
-              value={timeRange} 
-              onChange={(e) => setTimeRange(e.target.value)}
-            >
+            <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)}>
               <option value="day">Today</option>
               <option value="week">This Week</option>
               <option value="total">All Time</option>
@@ -96,7 +78,7 @@ function AdminReports() {
       </div>
 
       {error && <div className="error-message">{error}</div>}
-      
+
       {loading ? (
         <div className="loading">Loading reports...</div>
       ) : (
@@ -110,35 +92,161 @@ function AdminReports() {
                 <th>Marshal</th>
                 <th>Status</th>
                 <th>Notes</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {walks.map((walk) => (
-                <tr key={walk.id}>
-                  <td>{formatDate(walk.start_time)}</td>
-                  <td>{walk.dog_name} ({walk.dog_breed})</td>
-                  <td>{walk.walker_name}</td>
-                  <td>{walk.marshal_name}</td>
-                  <td>
-                    <span className={getStatusBadgeClass(walk.status)}>
-                      {walk.status}
-                    </span>
-                  </td>
-                  <td>{walk.notes}</td>
+              {walks.length === 0 ? (
+                <tr>
+                  <td colSpan="7">No {reportType} walks found for the selected time range.</td>
                 </tr>
-              ))}
+              ) : (
+                walks.map((walk) => (
+                  <tr key={walk.id}>
+                    {reportType === 'upcoming' ? (
+                      <>
+                        <td colSpan="6">
+                          <strong>{new Date(walk.start_time).toLocaleString()}</strong><br />
+                          Marshal: {walk.marshal_name || 'Unknown'}
+                        </td>
+                        <td>
+                          <button
+                            className="assign-button"
+                            onClick={async () => {
+                              try {
+                                const authHeader = await getAuthHeader();
+                                setAssigningSlot(walk);
+                                const dogRes = await axios.get(`${process.env.REACT_APP_API_URL}/dogs`, authHeader);
+                                setAvailableDogs(dogRes.data);
+                                setSelectedDogIds([]);
+                              } catch (err) {
+                                console.error('Failed to load dogs', err);
+                              }
+                            }}
+                          >
+                            Assign Dogs
+                          </button>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td>
+                          <strong>{new Date(walk.start_time).toLocaleString()}</strong><br />
+                          {new Date(walk.end_time).toLocaleTimeString()}
+                        </td>
+                        <td>{walk.dog_name} ({walk.dog_breed})</td>
+                        <td>{walk.walker_name || 'Unknown'}</td>
+                        <td>{walk.marshal_name || 'Unknown'}</td>
+                        <td>{walk.status}</td>
+                        <td>{walk.notes || '—'}</td>
+                        <td>
+                          <button
+                            className="view-button"
+                            onClick={() => {
+                              setSelectedWalk(walk);
+                              setShowWalkModal(true);
+                            }}
+                          >
+                            View
+                          </button>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-          
-          {walks.length === 0 && (
-            <div className="no-data">
-              No {reportType} walks found for the selected time range.
+        </div>
+      )}
+
+      {/* Walk Detail Modal */}
+      {showWalkModal && selectedWalk && (
+        <div className="form-modal">
+          <div className="modal-content">
+            <span
+              className="close-icon"
+              onClick={() => {
+                setShowWalkModal(false);
+                setSelectedWalk(null);
+              }}
+            >
+              &times;
+            </span>
+
+            <h3>Walk Details</h3>
+            <p><strong>Date:</strong> {new Date(selectedWalk.start_time).toLocaleString()}</p>
+            <p><strong>Time:</strong> {new Date(selectedWalk.start_time).toLocaleTimeString()} – {new Date(selectedWalk.end_time).toLocaleTimeString()}</p>
+            <p><strong>Marshal:</strong> {selectedWalk.marshal_name || 'Unknown'}</p>
+            <p><strong>Walker:</strong> {selectedWalk.walker_name || 'Unknown'}</p>
+            <p><strong>Dog:</strong> {selectedWalk.dog_name} ({selectedWalk.dog_breed})</p>
+            {selectedWalk.notes && (
+              <p><strong>Notes:</strong><br />{selectedWalk.notes}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Assign Dogs Modal */}
+      {assigningSlot && (
+        <div className="form-modal">
+          <div className="modal-content">
+            <span className="close-icon" onClick={() => setAssigningSlot(null)}>&times;</span>
+
+            <h3>Assign Dogs to Walk</h3>
+            <p>
+              <strong>Time:</strong><br />
+              {new Date(assigningSlot.start_time).toLocaleString()} – {new Date(assigningSlot.end_time).toLocaleTimeString()}
+            </p>
+
+            <div className="form-group">
+              {availableDogs.map((dog) => (
+                <label key={dog.id} className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    value={dog.id}
+                    checked={selectedDogIds.includes(dog.id)}
+                    onChange={(e) => {
+                      const updated = e.target.checked
+                        ? [...selectedDogIds, dog.id]
+                        : selectedDogIds.filter(id => id !== dog.id);
+                      setSelectedDogIds(updated);
+                    }}
+                  />
+                  {dog.name} ({dog.breed})
+                </label>
+              ))}
             </div>
-          )}
+
+            <div className="modal-buttons">
+              <button
+                className="submit-button"
+                onClick={async () => {
+                  try {
+                    const authHeader = await getAuthHeader();
+                    await axios.post(
+                      `${process.env.REACT_APP_API_URL}/time-slots/${assigningSlot.id}/assign-dogs`,
+                      { dogIds: selectedDogIds },
+                      authHeader
+                    );
+
+                    setAssigningSlot(null);
+                    setSelectedDogIds([]);
+                    alert('Dogs assigned to time slot.');
+                  } catch (err) {
+                    console.error('Error assigning dogs:', err);
+                    alert('Failed to assign dogs.');
+                  }
+                }}
+              >
+                Assign Selected Dogs
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-export default AdminReports; 
+export default AdminReports;

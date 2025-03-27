@@ -20,7 +20,12 @@ function MarshalScheduler() {
   const [selectedWalkers, setSelectedWalkers] = useState([]);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedBookingSlot, setSelectedBookingSlot] = useState(null);
-
+  const [walkLogData, setWalkLogData] = useState({
+    selectedWalkerIds: [],
+    selectedDogIds: [],
+    notes: ''
+  });
+  const [finalizingWalk, setFinalizingWalk] = useState(false);
 
   // New state for dog form
   const [newDog, setNewDog] = useState({
@@ -416,51 +421,152 @@ function MarshalScheduler() {
       {showBookingModal && selectedBookingSlot && (
   <div className="form-modal">
     <div className="modal-content">
-      <h3>Walkers Booked for Slot</h3>
-      <p>
-        <strong>Start:</strong> {new Date(selectedBookingSlot.start).toLocaleString()}<br />
-        <strong>End:</strong> {new Date(selectedBookingSlot.end).toLocaleString()}
-      </p>
+      <span
+        className="close-icon"
+        onClick={() => {
+          setShowBookingModal(false);
+          setFinalizingWalk(false);
+          setWalkLogData({ selectedWalkerIds: [], selectedDogIds: [], notes: '' });
+        }}
+      >
+        &times;
+      </span>
 
-      {selectedWalkers.length === 0 ? (
-        <p>No walkers booked for this time slot.</p>
+      {!finalizingWalk ? (
+        <>
+          <h3>Walk Details</h3>
+          <p>
+            <strong>Start:</strong> {new Date(selectedBookingSlot.start).toLocaleString()}<br />
+            <strong>End:</strong> {new Date(selectedBookingSlot.end).toLocaleString()}
+          </p>
+
+          <h4>Booked Walkers:</h4>
+          {selectedWalkers.length === 0 ? (
+            <p>No walkers booked for this time slot.</p>
+          ) : (
+            <ul>
+              {selectedWalkers.map(walker => (
+                <li key={walker.id}>
+                  {walker.name} ({walker.email})
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="modal-buttons">
+            <button
+              className="delete-button"
+              onClick={async () => {
+                if (window.confirm('Are you sure you want to delete this walk?')) {
+                  try {
+                    const authHeader = await getAuthHeader();
+                    await axios.delete(`${process.env.REACT_APP_API_URL}/time-slots/${selectedBookingSlot.id}`, authHeader);
+                    setSuccess('Time slot deleted.');
+                    setShowBookingModal(false);
+                    fetchTimeSlots();
+                  } catch (err) {
+                    console.error('Error deleting time slot:', err);
+                    setError('Failed to delete time slot');
+                  }
+                }
+              }}
+            >
+              Delete Time Slot
+            </button>
+
+            <button
+              className="submit-button"
+              onClick={() => setFinalizingWalk(true)}
+            >
+              Finalize Walk
+            </button>
+          </div>
+        </>
       ) : (
-        <ul>
-          {selectedWalkers.map((walker) => (
-            <li key={walker.id}>
-              {walker.name} ({walker.email})
-            </li>
-          ))}
-        </ul>
-      )}
+        <>
+          <h3>Finalize Walk</h3>
 
-      <div className="modal-buttons">
-        <button
-          className="cancel-button"
-          onClick={() => setShowBookingModal(false)}
-        >
-          Close
-        </button>
-        <button
-          className="delete-button"
-          onClick={async () => {
-            if (window.confirm('Are you sure you want to delete this walk?')) {
-              try {
-                const authHeader = await getAuthHeader();
-                await axios.delete(`${process.env.REACT_APP_API_URL}/time-slots/${selectedBookingSlot.id}`, authHeader);
-                setSuccess('Time slot deleted.');
-                setShowBookingModal(false);
-                fetchTimeSlots();
-              } catch (err) {
-                console.error('Error deleting time slot:', err);
-                setError('Failed to delete time slot');
-              }
-            }
-          }}
-        >
-          Delete Time Slot
-        </button>
-      </div>
+          <h4>Who Showed Up?</h4>
+          {selectedWalkers.map(walker => (
+            <label key={walker.id} className="checkbox-label">
+              <input
+                type="checkbox"
+                value={walker.id}
+                checked={walkLogData.selectedWalkerIds.includes(walker.id)}
+                onChange={(e) => {
+                  const updated = e.target.checked
+                    ? [...walkLogData.selectedWalkerIds, walker.id]
+                    : walkLogData.selectedWalkerIds.filter(id => id !== walker.id);
+                  setWalkLogData({ ...walkLogData, selectedWalkerIds: updated });
+                }}
+              />
+              {walker.name} ({walker.email})
+            </label>
+          ))}
+
+          <h4>Dogs Walked:</h4>
+          {dogs.map(dog => (
+            <label key={dog.id} className="checkbox-label">
+              <input
+                type="checkbox"
+                value={dog.id}
+                checked={walkLogData.selectedDogIds.includes(dog.id)}
+                onChange={(e) => {
+                  const updated = e.target.checked
+                    ? [...walkLogData.selectedDogIds, dog.id]
+                    : walkLogData.selectedDogIds.filter(id => id !== dog.id);
+                  setWalkLogData({ ...walkLogData, selectedDogIds: updated });
+                }}
+              />
+              {dog.name} ({dog.breed})
+            </label>
+          ))}
+
+          <div className="form-group">
+            <label>Notes:</label>
+            <textarea
+              placeholder="Optional walk notes..."
+              value={walkLogData.notes}
+              onChange={(e) => setWalkLogData({ ...walkLogData, notes: e.target.value })}
+            />
+          </div>
+
+          <div className="modal-buttons">
+            <button
+              className="submit-button"
+              onClick={async () => {
+                if (walkLogData.selectedWalkerIds.length === 0 || walkLogData.selectedDogIds.length === 0) {
+                  alert('Please select at least one walker and one dog.');
+                  return;
+                }
+
+                try {
+                  const authHeader = await getAuthHeader();
+                  const payload = {
+                    timeSlotId: selectedBookingSlot.id,
+                    walkerIds: walkLogData.selectedWalkerIds,
+                    dogIds: walkLogData.selectedDogIds,
+                    notes: walkLogData.notes
+                  };
+
+                  await axios.post(`${process.env.REACT_APP_API_URL}/walks`, payload, authHeader);
+
+                  setSuccess('Walk finalized successfully!');
+                  setShowBookingModal(false);
+                  setWalkLogData({ selectedWalkerIds: [], selectedDogIds: [], notes: '' });
+                  setFinalizingWalk(false);
+                  fetchTimeSlots();
+                } catch (err) {
+                  console.error('Error finalizing walk:', err.response?.data || err);
+                  setError('Failed to finalize walk. Please try again.');
+                }
+              }}
+            >
+              Submit Final Walk
+            </button>
+          </div>
+        </>
+      )}
     </div>
   </div>
 )}

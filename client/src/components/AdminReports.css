@@ -86,6 +86,55 @@
   z-index: 1;
 }
 
+.walk-list {
+  list-style: none;
+  padding: 0;
+}
+
+.walk-item {
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #f9f9f9;
+  border-left: 4px solid #800020;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.walk-item:hover {
+  background-color: #f1f1f1;
+}
+
+.form-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  position: relative;
+  background-color: white;
+  padding: 25px 30px;
+  border-radius: 10px;
+  max-width: 500px;
+  width: 90%;
+}
+
+.close-icon {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #444;
+}
 .reports-table tr:last-child td {
   border-bottom: none;
 }
