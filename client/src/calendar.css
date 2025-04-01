@@ -3,6 +3,7 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .calendar-wrapper {
@@ -10,6 +11,8 @@
   height: calc(100vh - 200px);
   min-height: 500px;
   position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Custom Toolbar Styles */
@@ -87,6 +90,7 @@
   .calendar-wrapper {
     height: calc(100vh - 150px);
     min-height: 400px;
+    overflow-x: auto;
   }
 
   .custom-toolbar {
@@ -106,8 +110,22 @@
     order: -1;
   }
 
+  .fc .fc-toolbar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1.2rem !important;
+  }
+
+  .fc .fc-button {
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.9rem !important;
+  }
+
   .fc .fc-timegrid-slot {
-    height: 2.5em !important;
+    height: 3em !important;
   }
 
   .fc .fc-timegrid-axis-cushion,
@@ -118,20 +136,6 @@
   .fc .fc-event {
     font-size: 0.8rem;
     padding: 1px 2px;
-  }
-
-  .fc .fc-toolbar-title {
-    font-size: 1.2rem;
-  }
-
-  .fc .fc-timegrid-now-indicator-line {
-    border-color: #dc3545;
-  }
-
-  /* Improve touch targets */
-  .fc .fc-button {
-    min-width: 44px;
-    min-height: 44px;
   }
 }
 

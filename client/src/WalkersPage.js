@@ -46,38 +46,122 @@ function WalkersPage() {
     setPhoneNumber(walker.phoneNumber);
   };
 
-  return (
-    <div>
-      <h2>Walker Management</h2>
-      <input
-        type="text"
-        placeholder="Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        style={{ marginRight: '10px' }}
-      />
-      <input
-        type="number"
-        placeholder="Phone Number"
-        value={phoneNumber}
-        onChange={(e) => setPhoneNumber(e.target.value)}
-        style={{ marginRight: '10px' }}
-      />
-      {editingWalker ? (
-        <button onClick={updateWalker}>Update Walker</button>
-      ) : (
-        <button onClick={createWalker}>Add Walker</button>
-      )}
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    createWalker();
+  };
 
-      <ul style={{ marginTop: '20px' }}>
-        {walkers.map((walker) => (
-          <li key={walker.id} style={{ marginBottom: '10px' }}>
-            <strong>{walker.name}</strong> - {walker.phoneNumber}
-            <button onClick={() => handleEdit(walker)} style={{ marginLeft: '10px' }}>Edit</button>
-            <button onClick={() => deleteWalker(walker.id)} style={{ marginLeft: '5px' }}>Delete</button>
-          </li>
-        ))}
-      </ul>
+  return (
+    <div className="page-container">
+      <h1 className="page-title">Dog Walkers</h1>
+      
+      <section className="section">
+        <h2>Add New Walker</h2>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">Name:</label>
+            <input
+              type="text"
+              className="form-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Phone:</label>
+            <input
+              type="tel"
+              className="form-input"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              required
+            />
+          </div>
+          <button type="submit" className="btn btn-primary">Add Walker</button>
+        </form>
+      </section>
+
+      <section className="section">
+        <h2>Walkers List</h2>
+        <div className="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {walkers.map((walker) => (
+                <tr key={walker.id}>
+                  <td>{walker.name}</td>
+                  <td>{walker.phoneNumber}</td>
+                  <td>
+                    <div className="action-buttons">
+                      <button
+                        className="btn-edit"
+                        onClick={() => handleEdit(walker)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="btn-delete"
+                        onClick={() => deleteWalker(walker.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {editingWalker && (
+        <div className="modal">
+          <div className="modal-content section">
+            <h2>Edit Walker</h2>
+            <form onSubmit={updateWalker}>
+              <div className="form-group">
+                <label className="form-label">Name:</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Phone:</label>
+                <input
+                  type="tel"
+                  className="form-input"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="action-buttons">
+                <button type="submit" className="btn btn-primary">
+                  Save Changes
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setEditingWalker(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

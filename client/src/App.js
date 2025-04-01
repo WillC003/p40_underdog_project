@@ -12,6 +12,8 @@ import MarshalScheduler from './components/MarshalScheduler';
 import WalkerCalendar from './components/WalkerCalendar';
 import Login from './components/Login';
 import Signup from './components/Signup';
+import AboutUs from './components/AboutUs';
+import titleLogo from './assets/photo/title.png';
 import './App.css'; // Import the CSS file
 
 function App() {
@@ -86,13 +88,26 @@ function App() {
       <div className="app-container">
         {/* Navigation */}
         <nav className="navbar">
-          <div className="nav-brand">
-            <Link to="/" className="brand-link">P40 Underdogs</Link>
+          <div className="nav-links left">
+            <NavLink to="/" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu} end>
+              Home
+            </NavLink>
+            <NavLink to="/about" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
+              About Us
+            </NavLink>
           </div>
+
+          <div className="nav-brand">
+            <Link to="/" className="brand-link">
+              <img src={titleLogo} alt="P40 Underdogs Title" className="nav-title" />
+            </Link>
+          </div>
+
           <button className="mobile-menu-button" onClick={toggleMobileMenu} aria-label="Toggle menu">
             <i className="fas fa-bars"></i>
           </button>
-          <div className={`nav-links ${isMobileMenuOpen ? 'show' : ''}`}>
+
+          <div className={`nav-links right ${isMobileMenuOpen ? 'show' : ''}`}>
             {user ? (
               <>
                 {userRole === 'walker' && (
@@ -129,17 +144,16 @@ function App() {
               </>
             ) : (
               <>
-                <NavLink to="/" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu} end>
-                  Home
-                </NavLink>
                 <NavLink to="/login" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
-                  Login
+                  <i className="fas fa-sign-in-alt"></i>
+                  <span>Login</span>
                 </NavLink>
                 <NavLink to="/signup" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
-                  Sign Up
+                  <i className="fas fa-user-plus"></i>
+                  <span>Sign Up</span>
                 </NavLink>
                 <NavLink to="/admin-login" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
-                  Admin Login
+                  <i className="fas fa-user-shield"></i>
                 </NavLink>
               </>
             )}
@@ -151,6 +165,7 @@ function App() {
         <Routes>
             {/* Public Routes */}
             <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutUs />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/admin-login" element={<AdminLogin />} />

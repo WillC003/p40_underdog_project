@@ -192,30 +192,139 @@ function DogsPage() {
   };
 
   return (
-    <div className="dogs-page">
-      <header className="header">
-        <h1>Gallery</h1>
-        <button onClick={openAddModal} className="btn add-btn">
-          Add New Dog
-        </button>
-      </header>
-      <div className="gallery">
-        {dogs.map((dog) => (
-          <div key={dog.id} className="dog-card">
-            <img src={dog.imageUrl} alt={dog.name} className="dog-image" />
-            <h3 className="dog-name">{dog.name}</h3>
-            <p className="dog-breed">{dog.breed}</p>
-            <div className="card-buttons">
-              <button onClick={() => openEditModal(dog)} className="btn edit-btn">
-                Edit
-              </button>
-              <button onClick={() => openDeleteModal(dog)} className="btn delete-btn">
-                Delete
-              </button>
-            </div>
+    <div className="page-container">
+      <h1 className="page-title">Dogs Management</h1>
+      
+      <section className="section">
+        <h2>Add New Dog</h2>
+        <form onSubmit={handleDogModalSubmit}>
+          <div className="form-group">
+            <label className="form-label">Name:</label>
+            <input
+              type="text"
+              className="form-input"
+              value={editingDog?.name}
+              onChange={(e) => setEditingDog({ ...editingDog, name: e.target.value })}
+              required
+            />
           </div>
-        ))}
-      </div>
+          <div className="form-group">
+            <label className="form-label">Breed:</label>
+            <input
+              type="text"
+              className="form-input"
+              value={editingDog?.breed}
+              onChange={(e) => setEditingDog({ ...editingDog, breed: e.target.value })}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Age:</label>
+            <input
+              type="number"
+              className="form-input"
+              value={editingDog?.age}
+              onChange={(e) => setEditingDog({ ...editingDog, age: e.target.value })}
+              required
+            />
+          </div>
+          <button type="submit" className="btn btn-primary">Add Dog</button>
+        </form>
+      </section>
+
+      <section className="section">
+        <h2>Dogs List</h2>
+        <div className="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Breed</th>
+                <th>Age</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dogs.map((dog) => (
+                <tr key={dog.id}>
+                  <td>{dog.name}</td>
+                  <td>{dog.breed}</td>
+                  <td>{dog.age}</td>
+                  <td>
+                    <div className="action-buttons">
+                      <button
+                        className="btn-edit"
+                        onClick={() => openEditModal(dog)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="btn-delete"
+                        onClick={() => openDeleteModal(dog)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {editingDog && (
+        <div className="modal">
+          <div className="modal-content section">
+            <h2>Edit Dog</h2>
+            <form onSubmit={handleDogModalSubmit}>
+              <div className="form-group">
+                <label className="form-label">Name:</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editingDog.name}
+                  onChange={(e) => setEditingDog({ ...editingDog, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Breed:</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editingDog.breed}
+                  onChange={(e) => setEditingDog({ ...editingDog, breed: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Age:</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={editingDog.age}
+                  onChange={(e) => setEditingDog({ ...editingDog, age: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="action-buttons">
+                <button type="submit" className="btn btn-primary">
+                  Save Changes
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setEditingDog(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <DogModal
         isOpen={isDogModalOpen}
         onClose={closeDogModal}
