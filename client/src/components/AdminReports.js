@@ -5,7 +5,7 @@ import './AdminReports.css';
 
 function AdminReports() {
   const [walks, setWalks] = useState([]);
-  const [reportType, setReportType] = useState('upcoming');
+  const [reportType, setReportType] = useState('upcoming'); // 'upcoming', 'completed', 'dog-stats'
   const [timeRange, setTimeRange] = useState('day');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -14,6 +14,7 @@ function AdminReports() {
   const [assigningSlot, setAssigningSlot] = useState(null);
   const [availableDogs, setAvailableDogs] = useState([]);
   const [selectedDogIds, setSelectedDogIds] = useState([]);
+  const [dogStats, setDogStats] = useState([]);
 
   const getAuthHeader = async () => {
     const user = auth.currentUser;
@@ -29,16 +30,17 @@ function AdminReports() {
   };
 
   const fetchWalks = async () => {
+    if (reportType === 'dog-stats') return;
     setLoading(true);
     setError('');
     try {
       const authHeader = await getAuthHeader();
       const response = reportType === 'upcoming'
-  ? await axios.get(`${process.env.REACT_APP_API_URL}/upcoming-walks`, authHeader)
-  : await axios.get(`${process.env.REACT_APP_API_URL}/walks`, {
-      ...authHeader,
-      params: { type: reportType, range: timeRange }
-    });
+        ? await axios.get(`${process.env.REACT_APP_API_URL}/upcoming-walks`, authHeader)
+        : await axios.get(`${process.env.REACT_APP_API_URL}/walks`, {
+            ...authHeader,
+            params: { type: reportType, range: timeRange }
+          });
       setWalks(response.data);
     } catch (err) {
       console.error('Error fetching walks:', err.response?.data || err);
@@ -48,8 +50,27 @@ function AdminReports() {
     }
   };
 
+  const fetchDogStats = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const authHeader = await getAuthHeader();
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/dog-walk-stats`, authHeader);
+      setDogStats(res.data);
+    } catch (err) {
+      console.error('Error fetching dog walk stats:', err);
+      setError('Failed to fetch dog walk stats');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchWalks();
+    if (reportType === 'dog-stats') {
+      fetchDogStats();
+    } else {
+      fetchWalks();
+    }
   }, [reportType, timeRange]);
 
   return (
@@ -62,6 +83,7 @@ function AdminReports() {
           <select value={reportType} onChange={(e) => setReportType(e.target.value)}>
             <option value="upcoming">Upcoming Walks</option>
             <option value="completed">Completed Walks</option>
+            <option value="dog-stats">Dog Walk Stats</option>
           </select>
         </div>
 
@@ -81,6 +103,32 @@ function AdminReports() {
 
       {loading ? (
         <div className="loading">Loading reports...</div>
+      ) : reportType === 'dog-stats' ? (
+        <div className="reports-table-container">
+          <h3>Dog Walk Stats</h3>
+          <table className="reports-table">
+            <thead>
+              <tr>
+                <th>Dog Name</th>
+                <th>Breed</th>
+                <th>Walks This Week</th>
+                <th>Walks This Month</th>
+                <th>Last Walked</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dogStats.map((dog) => (
+                <tr key={dog.id}>
+                  <td>{dog.name}</td>
+                  <td>{dog.breed}</td>
+                  <td>{dog.walks_this_week}</td>
+                  <td>{dog.walks_this_month}</td>
+                  <td>{dog.last_walked ? new Date(dog.last_walked).toLocaleString() : 'Never'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <div className="reports-table-container">
           <table className="reports-table">
@@ -160,7 +208,7 @@ function AdminReports() {
         </div>
       )}
 
-      {/* Walk Detail Modal */}
+      {/* View Walk Modal */}
       {showWalkModal && selectedWalk && (
         <div className="form-modal">
           <div className="modal-content">
@@ -173,7 +221,6 @@ function AdminReports() {
             >
               &times;
             </span>
-
             <h3>Walk Details</h3>
             <p><strong>Date:</strong> {new Date(selectedWalk.start_time).toLocaleString()}</p>
             <p><strong>Time:</strong> {new Date(selectedWalk.start_time).toLocaleTimeString()} – {new Date(selectedWalk.end_time).toLocaleTimeString()}</p>
@@ -192,7 +239,6 @@ function AdminReports() {
         <div className="form-modal">
           <div className="modal-content">
             <span className="close-icon" onClick={() => setAssigningSlot(null)}>&times;</span>
-
             <h3>Assign Dogs to Walk</h3>
             <p>
               <strong>Time:</strong><br />
@@ -229,7 +275,6 @@ function AdminReports() {
                       { dogIds: selectedDogIds },
                       authHeader
                     );
-
                     setAssigningSlot(null);
                     setSelectedDogIds([]);
                     alert('Dogs assigned to time slot.');

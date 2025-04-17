@@ -153,6 +153,32 @@ app.post('/dogs', authenticateUser, authorizeRoles(['admin', 'marshal']), async 
   }
 });
 
+app.delete('/dogs/:id', authenticateUser, authorizeRoles(['admin', 'marshal']), async (req, res) => {
+  const { id } = req.params;
+  try {
+    await query('DELETE FROM dogs WHERE id = ?', [id]);
+    res.json({ message: 'Dog deleted' });
+  } catch (err) {
+    console.error('Failed to delete dog:', err);
+    res.status(500).json({ error: 'Failed to delete dog' });
+  }
+});
+
+app.put('/dogs/:id', authenticateUser, authorizeRoles(['admin', 'marshal']), async (req, res) => {
+  const { id } = req.params;
+  const { name, breed, description } = req.body;
+
+  try {
+    await query(
+      `UPDATE dogs SET name = ?, breed = ?, description = ? WHERE id = ?`,
+      [name, breed, description, id]
+    );
+    res.json({ message: 'Dog updated successfully' });
+  } catch (err) {
+    console.error('Error updating dog:', err);
+    res.status(500).json({ error: 'Failed to update dog' });
+  }
+});
 // Walkers routes
 app.get('/walkers', authenticateUser, async (req, res) => {
   try {
@@ -471,20 +497,57 @@ app.get('/time-slots/:id/assigned-dogs', authenticateUser, authorizeRoles(['mars
 app.get('/upcoming-walks', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
   try {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    // Pull all future time slots
     const slots = await query(`
-      SELECT 
-        ts.id, ts.start_time, ts.end_time, ts.status, 
-        u.name AS marshal_name
-      FROM time_slots ts
-      JOIN users u ON u.uid = ts.created_by
-      WHERE ts.start_time > ? 
-      ORDER BY ts.start_time ASC
+      SELECT id, start_time, end_time, status, created_by
+      FROM time_slots
+      WHERE start_time > ?
+      ORDER BY start_time ASC
     `, [now]);
 
-    res.json(slots);
+    // Fetch marshal names from Firestore
+    const usersRef = admin.firestore().collection('users');
+    const slotsWithNames = await Promise.all(
+      slots.map(async (slot) => {
+        try {
+          const userDoc = await usersRef.doc(slot.created_by).get();
+          const marshal_name = userDoc.exists ? userDoc.data().name : 'Unknown Marshal';
+          return { ...slot, marshal_name };
+        } catch {
+          return { ...slot, marshal_name: 'Unknown Marshal' };
+        }
+      })
+    );
+
+    res.json(slotsWithNames);
   } catch (error) {
     console.error('Error fetching upcoming time slots:', error);
     res.status(500).json({ error: 'Failed to fetch upcoming walks' });
+  }
+});
+
+app.get('/dog-walk-stats', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
+  try {
+    const stats = await query(`
+      SELECT 
+        d.id,
+        d.name,
+        d.breed,
+        MAX(ts.start_time) AS last_walked,
+        SUM(CASE WHEN ts.start_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) AS walks_this_week,
+        SUM(CASE WHEN ts.start_time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS walks_this_month
+      FROM dogs d
+      LEFT JOIN walks w ON d.id = w.dog_id
+      LEFT JOIN time_slots ts ON w.time_slot_id = ts.id
+      WHERE w.status = 'completed'
+      GROUP BY d.id, d.name, d.breed
+      ORDER BY d.name ASC;
+    `);
+    res.json(stats);
+  } catch (err) {
+    console.error('Error fetching dog walk stats:', err);
+    res.status(500).json({ error: 'Failed to fetch stats' });
   }
 });
 

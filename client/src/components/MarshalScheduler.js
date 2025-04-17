@@ -26,6 +26,7 @@ function MarshalScheduler() {
     notes: ''
   });
   const [finalizingWalk, setFinalizingWalk] = useState(false);
+  const [assignedDogs, setAssignedDogs] = useState([]);
 
   // New state for dog form
   const [newDog, setNewDog] = useState({
@@ -404,13 +405,20 @@ function MarshalScheduler() {
             eventClick={async (info) => {
               try {
                 const authHeader = await getAuthHeader();
-                const res = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots/${info.event.id}/bookings`, authHeader);
-                setSelectedWalkers(res.data);
-                setSelectedBookingSlot(info.event); // Save slot for deletion
+            
+                // Fetch walkers
+                const walkerRes = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots/${info.event.id}/bookings`, authHeader);
+                setSelectedWalkers(walkerRes.data);
+            
+                // Fetch assigned dogs
+                const dogRes = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots/${info.event.id}/assigned-dogs`, authHeader);
+                setAssignedDogs(dogRes.data); // ← Add this state if not yet created
+            
+                setSelectedBookingSlot(info.event);
                 setShowBookingModal(true);
               } catch (err) {
-                console.error('Failed to load bookings', err);
-                setError('Could not load walkers for this slot');
+                console.error('Failed to load booking info:', err);
+                setError('Could not load walk details');
               }
             }}
           />
@@ -452,7 +460,18 @@ function MarshalScheduler() {
               ))}
             </ul>
           )}
-
+          {assignedDogs.length > 0 && (
+          <>
+            <h4>Dogs Needing to Be Walked (Assigned by Admin):</h4>
+    <ul>
+      {assignedDogs.map(dog => (
+        <li key={dog.id}>
+          {dog.name} ({dog.breed})
+        </li>
+      ))}
+    </ul>
+  </>
+)}
           <div className="modal-buttons">
             <button
               className="delete-button"

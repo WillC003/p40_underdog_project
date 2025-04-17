@@ -224,9 +224,8 @@ function App() {
             <div className="footer-section">
               <h3>Follow Us</h3>
               <div className="social-links">
-                <a href="#" className="social-link">Facebook</a>
-                <a href="#" className="social-link">Instagram</a>
-                <a href="#" className="social-link">Twitter</a>
+                <a href="https://www.facebook.com/people/ULM-P-40-Underdogs/61569583151092/#" className="social-link">Facebook</a>
+                <a href="https://www.instagram.com/ulm_p40underdogs/" className="social-link">Instagram</a>
               </div>
             </div>
           </div>
