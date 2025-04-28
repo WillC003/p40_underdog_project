@@ -13,7 +13,7 @@ import WalkerCalendar from './components/WalkerCalendar';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import './App.css'; // Import the CSS file
-
+import AdminCalendar from './components/AdminCalendar';
 function App() {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
@@ -121,7 +121,11 @@ function App() {
                     <NavLink to="/dogs" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
                       Dogs
                     </NavLink>
+                    <NavLink to="/admin-calendar" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
+                      Calendar
+                    </NavLink>
                   </>
+
                 )}
                 <button onClick={() => { handleLogout(); closeMobileMenu(); }} className="logout-button">
                   Logout
@@ -197,9 +201,16 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminReports />
-                </ProtectedRoute>
+                  </ProtectedRoute>
               } 
             />
+
+            <Route path="/admin-calendar" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                 <AdminCalendar />
+                 </ProtectedRoute>
+
+                } />
 
             {/* Catch all route - redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />

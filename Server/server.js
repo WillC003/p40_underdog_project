@@ -6,6 +6,7 @@ const admin = require('firebase-admin');
 const app = express();
 const PORT = process.env.PORT || 8000;
 
+
 // Initialize Firebase Admin
 const serviceAccount = require('./firebase-service-account.example.json');
 admin.initializeApp({
@@ -547,6 +548,24 @@ app.get('/dog-walk-stats', authenticateUser, authorizeRoles(['admin']), async (r
   } catch (err) {
     console.error('Error fetching dog walk stats:', err);
     res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+app.post('/block-day', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
+  const { date } = req.body; // e.g., "2025-05-10"
+
+  const startTime = `${date} 00:00:00`;
+  const endTime = `${date} 23:59:59`;
+
+  try {
+    await query(
+      `INSERT INTO time_slots (start_time, end_time, status, type, created_by) VALUES (?, ?, 'blocked', 'blocked', ?)`,
+      [startTime, endTime, req.user.uid]
+    );
+    res.status(201).json({ message: 'Day blocked successfully' });
+  } catch (error) {
+    console.error('Error blocking day:', error);
+    res.status(500).json({ error: 'Failed to block day' });
   }
 });
 
