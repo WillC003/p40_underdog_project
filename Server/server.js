@@ -322,15 +322,14 @@ app.get('/walks', authenticateUser, async (req, res) => {
   try {
     const { type, range } = req.query;
     let sqlQuery = `
-      SELECT 
-        w.*,
-        d.name as dog_name,
-        d.breed as dog_breed,
-        ts.start_time,
-        ts.end_time,
-        ts.walker_id,
-        ts.created_by as marshal_id
-      FROM walks w
+       SELECT 
+    w.*,
+    d.name as dog_name,
+    d.breed as dog_breed,
+    ts.start_time,
+    ts.end_time,
+    ts.created_by as marshal_id
+  FROM walks w
       JOIN dogs d ON w.dog_id = d.id
       JOIN time_slots ts ON w.time_slot_id = ts.id
       WHERE 1=1
