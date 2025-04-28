@@ -319,6 +319,39 @@ app.delete('/time-slots/:id', authenticateUser, authorizeRoles(['marshal']), asy
   }
 });
 
+app.get('/time-slots/upcoming', authenticateUser, async (req, res) => {
+  try {
+    const [slots] = await pool.query(`
+      SELECT ts.*
+      FROM time_slots ts
+      WHERE ts.start_time >= NOW() AND ts.status = 'available'
+      ORDER BY ts.start_time ASC
+    `);
+    res.json(slots);
+  } catch (error) {
+    console.error('Error fetching upcoming time slots:', error);
+    res.status(500).json({ error: 'Failed to fetch upcoming time slots' });
+  }
+});
+
+
+app.get('/time-slots/my-bookings', authenticateUser, async (req, res) => {
+  try {
+    const walkerId = req.user.uid;
+    const [bookings] = await pool.query(`
+      SELECT ts.*
+      FROM time_slots ts
+      JOIN time_slot_bookings b ON ts.id = b.time_slot_id
+      WHERE b.walker_id = ? AND ts.start_time >= NOW()
+      ORDER BY ts.start_time ASC
+    `, [walkerId]);
+    res.json(bookings);
+  } catch (error) {
+    console.error('Error fetching walker bookings:', error);
+    res.status(500).json({ error: 'Failed to fetch your booked walks' });
+  }
+});
+
 // Walks routes
 app.get('/walks', authenticateUser, async (req, res) => {
   try {
