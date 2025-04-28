@@ -25,6 +25,8 @@ function DogModal({ isOpen, onClose, onSubmit, initialData, mode }) {
   const [breed, setBreed] = useState(initialData ? initialData.breed : '');
   const [description, setDescription] = useState(initialData ? initialData.description : '');
   const [imageUrl, setImageUrl] = useState(initialData ? initialData.imageUrl : '');
+  const [grade, setGrade] = useState('grey');
+
 
   // Update form fields when modal opens or when initialData changes
   useEffect(() => {
@@ -33,11 +35,13 @@ function DogModal({ isOpen, onClose, onSubmit, initialData, mode }) {
       setBreed(initialData.breed);
       setDescription(initialData.description);
       setImageUrl(initialData.imageUrl);
+      setGrade(initialData.grade || 'grey')
     } else {
       setName('');
       setBreed('');
       setDescription('');
       setImageUrl('');
+      setGrade('grey');
     }
   }, [initialData, isOpen]);
 
@@ -49,7 +53,7 @@ function DogModal({ isOpen, onClose, onSubmit, initialData, mode }) {
       alert('Please fill in all fields');
       return;
     }
-    onSubmit({ name, breed, description, imageUrl });
+    onSubmit({ name, breed, description, imageUrl, grade });
   };
 
   return (
@@ -88,6 +92,18 @@ function DogModal({ isOpen, onClose, onSubmit, initialData, mode }) {
             <button type="button" onClick={onClose} className="modal-cancel">
               Cancel
             </button>
+          </div>
+          <div className="form-group">
+            <label>Grade</label>
+            <select
+            value={grade}
+            onChange={(e) => setGrade(e.target.value)}
+            required
+           >
+              <option value="grey">Grey (Needs training)</option>
+              <option value="maroon">Maroon (Medium)</option>
+              <option value="gold">Gold (Excellent walker)</option>
+            </select>
           </div>
         </form>
       </div>

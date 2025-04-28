@@ -119,7 +119,7 @@ app.get('/dogs', authenticateUser, async (req, res) => {
 });
 
 app.post('/dogs', authenticateUser, authorizeRoles(['admin', 'marshal']), async (req, res) => {
-  const { name, breed, description, imageUrl } = req.body;
+  const { name, breed, description, imageUrl, grade } = req.body;
   try {
     console.log('Creating dog with data:', { name, breed, description, imageUrl, created_by: req.user.uid });
 
@@ -128,8 +128,8 @@ app.post('/dogs', authenticateUser, authorizeRoles(['admin', 'marshal']), async 
     }
 
     const result = await query(
-      'INSERT INTO dogs (name, breed, description, imageUrl, created_by) VALUES (?, ?, ?, ?, ?)',
-      [name, breed, description, imageUrl, req.user.uid]
+      'INSERT INTO dogs (name, breed, description, imageUrl, grade, created_by) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, breed, description, imageUrl, grade || 'grey', req.user.uid]
     );
 
     const newDog = {
@@ -167,12 +167,13 @@ app.delete('/dogs/:id', authenticateUser, authorizeRoles(['admin', 'marshal']), 
 
 app.put('/dogs/:id', authenticateUser, authorizeRoles(['admin', 'marshal']), async (req, res) => {
   const { id } = req.params;
-  const { name, breed, description } = req.body;
+  const { name, breed, description, imageUrl, grade } = req.body;
 
   try {
     await query(
-      `UPDATE dogs SET name = ?, breed = ?, description = ? WHERE id = ?`,
-      [name, breed, description, id]
+      `UPDATE dogs SET name = ?, breed = ?, description = ?, imageUrl = ?, grade = ? WHERE id = ?`,
+      [name, breed, description, imageUrl, grade, id]
+
     );
     res.json({ message: 'Dog updated successfully' });
   } catch (err) {
