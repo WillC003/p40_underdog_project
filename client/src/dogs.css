@@ -1,157 +1,221 @@
-/* Global body settings */
+/* Global Styles */
 body {
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
-    background-color: #fff; /* White background */
-    color: #333; /* Dark grey text */
-  }
-  
-  /* Container for the dog gallery page */
-  .dogs-page {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-  }
-  
-  /* Header styling */
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #800000; /* Maroon */
-    padding: 10px 20px;
-    border-radius: 8px;
-    color: #fff;
-  }
-  
-  .header h1 {
-    margin: 0;
-  }
-  
-  /* General button styling */
-  .btn {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-  }
-  
-  /* Specific buttons */
-  .add-btn {
-    background-color: #FFD700; /* Gold */
-    color: #800000; /* Maroon text */
-  }
-  
-  .edit-btn {
-    background-color: #FFD700; /* Gold */
-    color: #800000; /* Maroon text */
-  }
-  
-  .delete-btn {
-    background-color: #800000; /* Maroon */
-    color: #fff;
-  }
-  
-  /* Gallery grid layout */
-  .gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-  }
-  
-  /* Dog card styling */
-  .dog-card {
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background-color: #f7f7f7; /* Light grey */
-    padding: 10px;
-    text-align: center;
-  }
-  
-  .dog-image {
-    width: 100%;
-    height: 180px;
-    object-fit: cover;
-    border-radius: 8px;
-  }
-  
-  .dog-name {
-    margin: 10px 0 5px 0;
-    color: #800000; /* Maroon */
-  }
-  
-  .dog-breed {
-    margin: 0 0 10px 0;
-    color: #555; /* Darker grey */
-  }
-  
-  .card-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-  }
-  
-  /* Modal overlay and content */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  
-  .modal-content {
-    background-color: #fff;
-    border: 2px solid #800000; /* Maroon border */
-    border-radius: 8px;
-    padding: 20px;
-    width: 400px;
-    max-width: 90%;
-    text-align: center;
-  }
-  
-  .modal-content h2 {
-    color: #800000;
-    margin-top: 0;
-  }
-  
-  /* Form inputs within the modal */
-  .modal-content form input {
-    width: 90%;
-    padding: 10px;
-    margin: 8px 0;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  /* Modal buttons container */
-  .modal-buttons {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 15px;
-  }
-  
-  /* Buttons inside the modal */
-  .modal-submit {
-    background-color: #FFD700; /* Gold */
-    color: #800000;
-  }
-  
-  .modal-cancel {
-    background-color: #ccc;
-    color: #333;
-  }
-  
-  .modal-delete {
-    background-color: #800000;
-    color: #fff;
-  }
-  
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', Arial, sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+/* Page Container */
+.dogs-page {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, #800000, #a83232);
+  padding: 15px 25px;
+  border-radius: 12px;
+  color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+/* Buttons */
+.btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-btn, .edit-btn {
+  background-color: #FFD700;
+  color: #800000;
+}
+
+.add-btn:hover, .edit-btn:hover {
+  background-color: #e6c200;
+}
+
+.delete-btn {
+  background-color: #800000;
+  color: #fff;
+}
+
+.delete-btn:hover {
+  background-color: #5a0000;
+}
+
+/* Gallery Grid */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 24px;
+  margin-top: 30px;
+}
+
+/* Base Dog Card */
+.dog-card {
+  background-color: #fff;
+  border: 3px solid #ccc; /* Default light grey border */
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hover effect */
+.dog-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Border Colors based on Grade */
+.dog-card.grey {
+  border-color: #a9a9a9; /* Grey border */
+}
+
+.dog-card.maroon {
+  border-color: maroon; /* Maroon border */
+}
+
+.dog-card.gold {
+  border-color: gold; /* Gold border */
+}
+
+.dog-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.dog-name {
+  margin: 15px 0 5px 0;
+  font-size: 1.2rem;
+  color: #800000;
+}
+
+.dog-breed {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  color: #666;
+}
+
+.dog-grade-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin: 10px auto 0 auto;
+  width: fit-content;
+}
+
+.dog-grade-badge.grey {
+  background-color: #a9a9a9;
+  color: white;
+}
+
+.dog-grade-badge.maroon {
+  background-color: maroon;
+  color: white;
+}
+
+.dog-grade-badge.gold {
+  background-color: gold;
+  color: black;
+}
+
+.card-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: auto;
+  padding: 15px 0;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #fff;
+  border: 2px solid #800000;
+  border-radius: 10px;
+  padding: 30px;
+  width: 400px;
+  max-width: 95%;
+  text-align: center;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  color: #800000;
+}
+
+.modal-content form input, .modal-content form select {
+  width: 90%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.modal-submit {
+  background-color: #FFD700;
+  color: #800000;
+}
+
+.modal-submit:hover {
+  background-color: #e6c200;
+}
+
+.modal-cancel {
+  background-color: #ccc;
+  color: #333;
+}
+
+.modal-cancel:hover {
+  background-color: #b3b3b3;
+}
+
+.modal-delete {
+  background-color: #800000;
+  color: white;
+}
+
+.modal-delete:hover {
+  background-color: #5a0000;
+}

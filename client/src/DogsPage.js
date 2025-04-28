@@ -217,7 +217,7 @@ function DogsPage() {
       </header>
       <div className="gallery">
         {dogs.map((dog) => (
-          <div key={dog.id} className="dog-card">
+          <div key={dog.id} className={`dog-card ${dog.grade}`}>
             <img src={dog.imageUrl} alt={dog.name} className="dog-image" />
             <h3 className="dog-name">{dog.name}</h3>
             <p className="dog-breed">{dog.breed}</p>
