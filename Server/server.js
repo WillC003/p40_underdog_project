@@ -321,7 +321,7 @@ app.delete('/time-slots/:id', authenticateUser, authorizeRoles(['marshal']), asy
 
 app.get('/time-slots/upcoming', authenticateUser, async (req, res) => {
   try {
-    const [slots] = await pool.query(`
+    const slots = await query(`
       SELECT ts.*
       FROM time_slots ts
       WHERE ts.start_time >= NOW() AND ts.status = 'available'
@@ -338,7 +338,7 @@ app.get('/time-slots/upcoming', authenticateUser, async (req, res) => {
 app.get('/time-slots/my-bookings', authenticateUser, async (req, res) => {
   try {
     const walkerId = req.user.uid;
-    const [bookings] = await pool.query(`
+    const bookings = await query(`
       SELECT ts.*
       FROM time_slots ts
       JOIN time_slot_bookings b ON ts.id = b.time_slot_id
