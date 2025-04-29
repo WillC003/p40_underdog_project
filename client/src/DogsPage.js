@@ -26,7 +26,7 @@ function DogModal({ isOpen, onClose, onSubmit, initialData, mode }) {
   const [description, setDescription] = useState(initialData ? initialData.description : '');
   const [imageUrl, setImageUrl] = useState(initialData ? initialData.imageUrl : '');
   const [grade, setGrade] = useState('grey');
-
+  const [imageFile, setImageFile] = useState(null);
 
   // Update form fields when modal opens or when initialData changes
   useEffect(() => {
@@ -49,11 +49,19 @@ function DogModal({ isOpen, onClose, onSubmit, initialData, mode }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name || !breed || !description || !imageUrl) {
+    if (!name || !breed || !description || !imageFile) {
       alert('Please fill in all fields');
       return;
     }
-    onSubmit({ name, breed, description, imageUrl, grade });
+  
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('breed', breed);
+    formData.append('description', description);
+    formData.append('grade', grade);
+    formData.append('image', imageFile);
+  
+    onSubmit(formData); // Send the FormData to parent component
   };
 
   return (
@@ -80,11 +88,9 @@ function DogModal({ isOpen, onClose, onSubmit, initialData, mode }) {
             onChange={(e) => setDescription(e.target.value)}
           />
           <input
-            type="text"
-            placeholder="Image URL"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-          />
+  type="file"
+  onChange={(e) => setImageFile(e.target.files[0])}
+/>
           <div className="modal-buttons">
             <button type="submit" className="modal-submit">
               {mode === 'edit' ? 'Update Dog' : 'Add Dog'}
@@ -171,13 +177,21 @@ function DogsPage() {
     setIsDogModalOpen(false);
   };
 
-  const handleDogModalSubmit = async (dogData) => {
+  const handleDogModalSubmit = async (formData) => {
     try {
       const authHeader = await getAuthHeader();
+      const config = {
+        ...authHeader,
+        headers: {
+          ...authHeader.headers,
+          'Content-Type': 'multipart/form-data'
+        }
+      };
+  
       if (dogModalMode === 'add') {
-        await axios.post(API_URL, dogData, authHeader);
+        await axios.post(API_URL, formData, config);
       } else if (dogModalMode === 'edit' && editingDog) {
-        await axios.put(`${API_URL}/${editingDog.id}`, dogData, authHeader);
+        await axios.put(`${API_URL}/${editingDog.id}`, formData, config);
       }
       closeDogModal();
       fetchDogs();
@@ -185,6 +199,7 @@ function DogsPage() {
       console.error('Error submitting dog data:', error);
     }
   };
+  
 
   const openDeleteModal = (dog) => {
     setDogToDelete(dog);
@@ -218,7 +233,11 @@ function DogsPage() {
       <div className="gallery">
         {dogs.map((dog) => (
           <div key={dog.id} className={`dog-card ${dog.grade}`}>
-            <img src={dog.imageUrl} alt={dog.name} className="dog-image" />
+            <img 
+  src={`data:image/jpeg;base64,${dog.image}`} 
+  alt={dog.name} 
+  className="dog-image" 
+/>
             <h3 className="dog-name">{dog.name}</h3>
             <p className="dog-breed">{dog.breed}</p>
             <div className="card-buttons">

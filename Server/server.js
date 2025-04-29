@@ -2,7 +2,7 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const admin = require('firebase-admin');
-
+const multer = require('multer');
 const app = express();
 const PORT = process.env.PORT || 8000;
 
@@ -12,6 +12,12 @@ const serviceAccount = require('./firebase-service-account.example.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
+
+
+// Setup Multer for handling file uploads
+const storage = multer.memoryStorage(); // Store uploaded file in memory buffer
+const upload = multer({ storage: storage });
+
 
 // Middleware
 app.use(cors({
@@ -111,46 +117,39 @@ const authorizeRoles = (roles) => {
 app.get('/dogs', authenticateUser, async (req, res) => {
   try {
     const results = await query('SELECT * FROM dogs');
-    res.json(results);
+
+    // Convert the binary image data to base64 strings
+    const dogs = results.map(dog => ({
+      ...dog,
+      image: dog.image ? dog.image.toString('base64') : null
+    }));
+
+    res.json(dogs);
   } catch (error) {
     console.error('Error fetching dogs:', error);
     res.status(500).json({ error: 'Failed to fetch dogs' });
   }
 });
 
-app.post('/dogs', authenticateUser, authorizeRoles(['admin', 'marshal']), async (req, res) => {
-  const { name, breed, description, imageUrl, grade } = req.body;
-  try {
-    console.log('Creating dog with data:', { name, breed, description, imageUrl, created_by: req.user.uid });
+// Updated POST /dogs
+app.post('/dogs', authenticateUser, authorizeRoles(['admin', 'marshal']), upload.single('image'), async (req, res) => {
+  const { name, breed, description, grade } = req.body;
+  const image = req.file?.buffer; // get binary data from uploaded file
 
-    if (!name) {
-      return res.status(400).json({ error: 'Dog name is required' });
+  try {
+    if (!name || !breed || !description || !image) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
     const result = await query(
-      'INSERT INTO dogs (name, breed, description, imageUrl, grade, created_by) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, breed, description, imageUrl, grade || 'grey', req.user.uid]
+      'INSERT INTO dogs (name, breed, description, image, grade, created_by) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, breed, description, image, grade || 'grey', req.user.uid]
     );
 
-    const newDog = {
-      id: result.insertId,
-      name,
-      breed,
-      description,
-      imageUrl,
-      created_by: req.user.uid
-    };
-
-    console.log('Dog created successfully:', newDog);
-    res.status(201).json(newDog);
+    res.status(201).json({ message: 'Dog added', id: result.insertId });
   } catch (error) {
     console.error('Error creating dog:', error);
-    res.status(500).json({ 
-      error: 'Failed to create dog',
-      details: error.message,
-      sqlState: error.sqlState,
-      sqlMessage: error.sqlMessage
-    });
+    res.status(500).json({ error: 'Failed to create dog' });
   }
 });
 
@@ -165,19 +164,28 @@ app.delete('/dogs/:id', authenticateUser, authorizeRoles(['admin', 'marshal']), 
   }
 });
 
-app.put('/dogs/:id', authenticateUser, authorizeRoles(['admin', 'marshal']), async (req, res) => {
+// Updated PUT /dogs/:id
+app.put('/dogs/:id', authenticateUser, authorizeRoles(['admin', 'marshal']), upload.single('image'), async (req, res) => {
   const { id } = req.params;
-  const { name, breed, description, imageUrl, grade } = req.body;
+  const { name, breed, description, grade } = req.body;
+  const image = req.file?.buffer;
 
   try {
-    await query(
-      `UPDATE dogs SET name = ?, breed = ?, description = ?, imageUrl = ?, grade = ? WHERE id = ?`,
-      [name, breed, description, imageUrl, grade, id]
+    let updateFields = [name, breed, description, grade, id];
+    let sql = `UPDATE dogs SET name = ?, breed = ?, description = ?, grade = ?`;
 
-    );
-    res.json({ message: 'Dog updated successfully' });
-  } catch (err) {
-    console.error('Error updating dog:', err);
+    if (image) {
+      sql = `UPDATE dogs SET name = ?, breed = ?, description = ?, grade = ?, image = ? WHERE id = ?`;
+      updateFields = [name, breed, description, grade, image, id];
+    } else {
+      sql += ` WHERE id = ?`;
+    }
+
+    await query(sql, updateFields);
+
+    res.json({ message: 'Dog updated' });
+  } catch (error) {
+    console.error('Error updating dog:', error);
     res.status(500).json({ error: 'Failed to update dog' });
   }
 });

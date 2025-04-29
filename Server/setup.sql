@@ -1,58 +1,64 @@
--- Create database if not exists
-CREATE DATABASE IF NOT EXISTS udog;
-USE udog;
+-- Create database
+CREATE DATABASE IF NOT EXISTS p40_underdogs;
+USE p40_underdogs;
 
--- Walkers Table
+-- Walkers table (Firebase UIDs)
 CREATE TABLE walkers (
-  id VARCHAR(255) PRIMARY KEY, -- Firebase UID
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  phone_number VARCHAR(20)
+  id VARCHAR(255) PRIMARY KEY,
+  name VARCHAR(255),
+  email VARCHAR(255),
+  phoneNumber VARCHAR(20),
+  role ENUM('walker', 'marshal', 'admin') DEFAULT 'walker',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Dogs Table
+-- Dogs table
 CREATE TABLE dogs (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
-  breed VARCHAR(255) NOT NULL,
+  breed VARCHAR(255),
   description TEXT,
   imageUrl TEXT,
-  created_by VARCHAR(255), -- Firebase UID of creator (admin or marshal)
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (created_by) REFERENCES walkers(id) ON DELETE SET NULL
+  grade ENUM('grey', 'maroon', 'gold') DEFAULT 'grey',
+  created_by VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Time Slots Table
+-- Time slots table
 CREATE TABLE time_slots (
   id INT AUTO_INCREMENT PRIMARY KEY,
   start_time DATETIME NOT NULL,
   end_time DATETIME NOT NULL,
-  status VARCHAR(20) DEFAULT 'available', -- available, booked, completed
-  created_by VARCHAR(255), -- Firebase UID of the marshal who created it
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (created_by) REFERENCES walkers(id) ON DELETE SET NULL
+  created_by VARCHAR(255),
+  status ENUM('available', 'booked', 'completed', 'cancelled', 'blocked') DEFAULT 'available',
+  type ENUM('normal', 'blocked') DEFAULT 'normal',
+  blocked BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Time Slot Bookings Table (join table for walkers booking time slots)
+-- Time slot bookings table
 CREATE TABLE time_slot_bookings (
   id INT AUTO_INCREMENT PRIMARY KEY,
   time_slot_id INT NOT NULL,
   walker_id VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (time_slot_id) REFERENCES time_slots(id) ON DELETE CASCADE,
-  FOREIGN KEY (walker_id) REFERENCES walkers(id) ON DELETE CASCADE
+  booked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Walks Table (completed walks)
+-- Walks table (completed walks)
 CREATE TABLE walks (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  dog_id INT NOT NULL,
-  walker_id VARCHAR(255) NOT NULL,
   time_slot_id INT NOT NULL,
-  status VARCHAR(20) DEFAULT 'completed', -- completed, cancelled, etc.
+  walker_id VARCHAR(255) NOT NULL,
+  dog_id INT NOT NULL,
+  status ENUM('completed', 'cancelled') DEFAULT 'completed',
   notes TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (dog_id) REFERENCES dogs(id) ON DELETE CASCADE,
-  FOREIGN KEY (walker_id) REFERENCES walkers(id) ON DELETE CASCADE,
-  FOREIGN KEY (time_slot_id) REFERENCES time_slots(id) ON DELETE CASCADE
+  walked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Assigned dogs to time slots
+CREATE TABLE time_slot_dogs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  time_slot_id INT NOT NULL,
+  dog_id INT NOT NULL,
+  assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
