@@ -13,12 +13,14 @@ function WalkerCalendar() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [slotBookings, setSlotBookings] = useState([]);
 
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -26,7 +28,7 @@ function WalkerCalendar() {
   const getAuthHeader = async () => {
     const user = auth.currentUser;
     if (user) {
-      const token = await user.getIdToken();
+      const token = await user.getIdToken(true); // <--- force refresh
       return {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -41,20 +43,16 @@ function WalkerCalendar() {
       setLoading(true);
       const authHeader = await getAuthHeader();
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots`, authHeader);
-      
       const formattedSlots = response.data
-      .filter(slot => slot.status === 'available' || slot.status === 'booked')
-       .map(slot => ({
-        id: slot.id,
-        title: slot.status === 'booked' ? 'Booked' : 'Available',
-        start: new Date(slot.start_time),
-        end: new Date(slot.end_time),
-        color: slot.status === 'booked' ? '#FFA500' : '#800020',
-        extendedProps: {
-          status: slot.status
-        }
-      }));
-      
+        .filter(slot => slot.status === 'available' || slot.status === 'booked')
+        .map(slot => ({
+          id: slot.id,
+          title: slot.status === 'booked' ? 'Booked' : 'Available',
+          start: new Date(slot.start_time),
+          end: new Date(slot.end_time),
+          color: slot.status === 'booked' ? '#FFA500' : '#800020',
+          extendedProps: { status: slot.status }
+        }));
       setTimeSlots(formattedSlots);
       setError('');
     } catch (err) {
@@ -65,23 +63,34 @@ function WalkerCalendar() {
     }
   };
 
-  useEffect(() => {
-    fetchTimeSlots();
-  }, []);
+  useEffect(() => { fetchTimeSlots(); }, []);
 
-  const handleBookSlot = async (slotId) => {
+  const fetchSlotBookingInfo = async (slotId) => {
+    try {
+      const authHeader = await getAuthHeader();
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots/${slotId}/bookings`, authHeader);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching slot booking info:', error);
+      return [];
+    }
+  };
+
+  const handleEventClick = async (info) => {
+    const slotId = info.event.id;
+    const bookings = await fetchSlotBookingInfo(slotId);
+    setSelectedSlot(info.event);
+    setSlotBookings(bookings);
+    setShowModal(true);
+  };
+
+  const handleConfirmBooking = async () => {
     try {
       setLoading(true);
-      setError('');
       const authHeader = await getAuthHeader();
-      
-      await axios.put(
-        `${process.env.REACT_APP_API_URL}/time-slots/${slotId}/book`,
-        {},
-        authHeader
-      );
-      
+      await axios.put(`${process.env.REACT_APP_API_URL}/time-slots/${selectedSlot.id}/book`, {}, authHeader);
       setSuccess('Time slot booked successfully!');
+      setShowModal(false);
       await fetchTimeSlots();
     } catch (err) {
       console.error('Error booking time slot:', err.response?.data || err);
@@ -108,7 +117,7 @@ function WalkerCalendar() {
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
       {loading && <div className="loading-message">Loading...</div>}
-      
+
       {isMobile ? (
         <div className="time-slots-list">
           {timeSlots.length === 0 ? (
@@ -119,23 +128,10 @@ function WalkerCalendar() {
                 <div className="time-slot-info">
                   <div className="time-slot-date">{formatDateTime(slot.start)}</div>
                   <div className="time-slot-duration">
-                    {new Date(slot.end).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      hour12: true
-                    })}
+                    {new Date(slot.end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                   </div>
                 </div>
-                <button 
-                  className="book-slot-button"
-                  onClick={() => {
-                    if (window.confirm('Would you like to book this time slot?')) {
-                      handleBookSlot(slot.id);
-                    }
-                  }}
-                >
-                  Book
-                </button>
+                <button className="book-slot-button" onClick={() => handleEventClick({ event: slot })}>View</button>
               </div>
             ))
           )}
@@ -146,22 +142,11 @@ function WalkerCalendar() {
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             initialView="timeGridWeek"
             selectable={false}
-            eventClick={(info) => {
-              if (info.event.extendedProps.status === 'booked') {
-                if (!window.confirm('This time slot is partially booked. Would you like to try booking it?')) return;
-              } else {
-                if (!window.confirm('Would you like to book this time slot?')) return;
-              }
-              handleBookSlot(info.event.id);
-            }}
+            eventClick={handleEventClick}
             dayMaxEvents={true}
             weekends={true}
             events={timeSlots}
-            headerToolbar={{
-              left: 'prev,next today',
-              center: 'title',
-              right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            }}
+            headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }}
             timeZone="local"
             slotMinTime="06:00:00"
             slotMaxTime="22:00:00"
@@ -171,8 +156,29 @@ function WalkerCalendar() {
           />
         </div>
       )}
+
+      {showModal && selectedSlot && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Confirm Booking</h2>
+            <p><strong>Date:</strong> {formatDateTime(selectedSlot.start)}</p>
+            <p><strong>Time:</strong> {new Date(selectedSlot.start).toLocaleTimeString()} - {new Date(selectedSlot.end).toLocaleTimeString()}</p>
+            <p><strong>Booked:</strong> {slotBookings.length}/4 spots</p>
+            <h4>Already Booked:</h4>
+            <ul>
+              {slotBookings.length > 0 ? slotBookings.map((b, idx) => (
+                <li key={idx}>{b.email}</li>
+              )) : <li>No one booked yet.</li>}
+            </ul>
+            <div className="modal-buttons">
+              <button className="confirm-btn" onClick={handleConfirmBooking}>Confirm</button>
+              <button className="cancel-btn" onClick={() => setShowModal(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-export default WalkerCalendar; 
+export default WalkerCalendar;

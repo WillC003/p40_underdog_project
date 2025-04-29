@@ -528,6 +528,24 @@ app.get('/time-slots/:id/assigned-dogs', authenticateUser, authorizeRoles(['mars
   }
 });
 
+app.get('/time-slots/:id/bookings', authenticateUser, async (req, res) => {
+  const timeSlotId = req.params.id;
+
+  try {
+    const [bookings] = await query(`
+      SELECT u.email
+      FROM time_slot_bookings b
+      JOIN users u ON b.walker_id = u.id
+      WHERE b.time_slot_id = ?
+    `, [timeSlotId]);
+
+    res.json(bookings);
+  } catch (error) {
+    console.error('Error fetching booking info:', error);
+    res.status(500).json({ error: 'Failed to fetch booking info' });
+  }
+});
+
 app.get('/upcoming-walks', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
   try {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');

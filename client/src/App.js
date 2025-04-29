@@ -14,6 +14,8 @@ import Login from './components/Login';
 import Signup from './components/Signup';
 import './App.css'; // Import the CSS file
 import AdminCalendar from './components/AdminCalendar';
+import WalkerDogPage from './WalkerDogPage';
+
 function App() {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
@@ -96,9 +98,14 @@ function App() {
             {user ? (
               <>
                 {userRole === 'walker' && (
+                  <>
                   <NavLink to="/walker-calendar" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
                     My Calendar
                   </NavLink>
+                  <NavLink to="/walker-dogs" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
+                  Gallery
+                </NavLink>
+                  </>
                 )}
                 {userRole === 'marshal' && (
                   <>
@@ -108,7 +115,10 @@ function App() {
                     <NavLink to="/dogs" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={closeMobileMenu}>
                       Dogs
                     </NavLink>
+                    
                   </>
+
+
                 )}
                 {userRole === 'admin' && (
                   <>
@@ -158,6 +168,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/walker-dogs" element={<WalkerDogPage />} />
             
             {/* Protected Routes */}
             <Route 
