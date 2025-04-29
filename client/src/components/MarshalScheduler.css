@@ -454,6 +454,27 @@
   }
 }
 
+
+.upcoming-walks-mobile {
+  margin-top: 30px;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.walk-card {
+  background: #f7f7f7;
+  margin-bottom: 15px;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.walk-card p {
+  margin: 8px 0;
+  color: #333;
+}
 /* Touch Device Optimizations */
 @media (hover: none) {
   .mobile-time-form .submit-button:active {

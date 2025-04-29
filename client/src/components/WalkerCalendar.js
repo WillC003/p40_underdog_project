@@ -44,7 +44,10 @@ function WalkerCalendar() {
       const authHeader = await getAuthHeader();
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots`, authHeader);
       const formattedSlots = response.data
-        .filter(slot => slot.status === 'available' || slot.status === 'booked')
+      .filter(slot => 
+        (slot.status === 'available' || slot.status === 'booked') &&
+        new Date(slot.start_time) >= new Date() // Only future walks
+      )
         .map(slot => ({
           id: slot.id,
           title: slot.status === 'booked' ? 'Booked' : 'Available',

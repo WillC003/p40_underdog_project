@@ -27,6 +27,8 @@ function MarshalScheduler() {
   });
   const [finalizingWalk, setFinalizingWalk] = useState(false);
   const [assignedDogs, setAssignedDogs] = useState([]);
+  const [isWalksExpanded, setIsWalksExpanded] = useState(false);
+  const [selectedUpcomingWalk, setSelectedUpcomingWalk] = useState(null);
 
   // New state for dog form
   const [newDog, setNewDog] = useState({
@@ -48,6 +50,24 @@ function MarshalScheduler() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedStartTime, setSelectedStartTime] = useState('');
   const [selectedEndTime, setSelectedEndTime] = useState('');
+
+  const handleUpcomingWalkClick = async (slot) => {
+    try {
+      const authHeader = await getAuthHeader();
+  
+      const walkerRes = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots/${slot.id}/bookings`, authHeader);
+      setSelectedWalkers(walkerRes.data);
+  
+      const dogRes = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots/${slot.id}/assigned-dogs`, authHeader);
+      setAssignedDogs(dogRes.data);
+  
+      setSelectedBookingSlot(slot);
+      setShowBookingModal(true);
+    } catch (err) {
+      console.error('Failed to load booking info:', err);
+      setError('Could not load walk details');
+    }
+  };
 
   useEffect(() => {
     fetchTimeSlots();
@@ -317,9 +337,6 @@ function MarshalScheduler() {
       <div className="scheduler-header">
         <h2>Marshal Dashboard</h2>
         <div className="action-buttons">
-          <button onClick={() => setShowAddDogForm(true)} className="action-button">
-            Add New Dog
-          </button>
           <button onClick={() => setShowLogWalkForm(true)} className="action-button">
             Log Walk
           </button>
@@ -423,6 +440,34 @@ function MarshalScheduler() {
             }}
           />
         )}
+        {isMobile && (
+  <div className="upcoming-walks-mobile">
+    <button
+      className="toggle-upcoming-button"
+      onClick={() => setIsWalksExpanded(prev => !prev)}
+    >
+      {isWalksExpanded ? 'Hide Upcoming Walks ▲' : 'Show Upcoming Walks ▼'}
+    </button>
+
+    {isWalksExpanded && (
+      <div className="upcoming-walks-list">
+        {timeSlots
+          .filter(slot => new Date(slot.start) >= new Date())
+          .sort((a, b) => new Date(a.start) - new Date(b.start))
+          .map(slot => (
+            <div
+              key={slot.id}
+              className="walk-card"
+              onClick={() => handleUpcomingWalkClick(slot)}
+            >
+              <p><strong>Date:</strong> {new Date(slot.start).toLocaleString()}</p>
+              <p><strong>Status:</strong> {slot.extendedProps?.status || 'Unknown'}</p>
+            </div>
+          ))}
+      </div>
+    )}
+  </div>
+)}
       </div>
 
 
