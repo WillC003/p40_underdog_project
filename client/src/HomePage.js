@@ -89,7 +89,7 @@ function HomePage() {
 
       {/* Services Section */}
       <section className="services">
-        <h2></h2>
+        <h2>Ways to Contribute</h2>
         <div className="services-grid">
           <div className="service-card">
             <i className="fas fa-paw"></i>
@@ -101,17 +101,18 @@ function HomePage() {
             <h3>Donate</h3>
             <p>Help our shelter and dogs out by donating</p>
           </div>
-          <div className="service-card">
-            <i className="fas fa-heart"></i>
-            <h3>Adopt</h3>
-            <a 
+          <a 
                href="https://humanesocietyofmonroe.org/adoptable-pets/" 
                target="_blank" 
                rel="noopener noreferrer" 
                className="adoption-link"
             >
-            Feel free to explore adoption through the monroe humane socioty</a>
+          <div className="service-card">
+            <i className="fas fa-heart"></i>
+            <h3>Adopt</h3>
+            <p>Feel free to explore adoption through the monroe humane socioty</p>
           </div>
+          </a>
         </div>
       </section>
 
@@ -134,7 +135,7 @@ function HomePage() {
       <section className="cta-section">
         <h2>Ready to Get Started?</h2>
         <p>Join our community of happy dogs and their owners</p>
-        <button className="primary-button">Contact Us Today</button>
+        <button className="primary-button">Get Started Today</button>
       </section>
     </div>
   );
