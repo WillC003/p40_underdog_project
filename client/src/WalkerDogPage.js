@@ -55,7 +55,11 @@ function WalkerDogsPage() {
         <div className="dogs-gallery">
           {dogs.map(dog => (
             <div key={dog.id} className="dog-card" onClick={() => handleDogClick(dog)}>
-              <img src={dog.imageUrl} alt={dog.name} className="dog-image" />
+              <img
+                src={`data:image/jpeg;base64,${dog.image}`}
+                alt={dog.name}
+                className="dog-image"
+              />
               <h3 className="dog-name">{dog.name}</h3>
               <p className="dog-breed">{dog.breed}</p>
             </div>
@@ -66,7 +70,11 @@ function WalkerDogsPage() {
       {showModal && selectedDog && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <img src={selectedDog.imageUrl} alt={selectedDog.name} className="modal-dog-image" />
+          <img
+            src={`data:image/jpeg;base64,${selectedDog.image}`}
+            alt={selectedDog.name}
+            className="modal-dog-image"
+          />
             <h2>{selectedDog.name}</h2>
             <p><strong>Breed:</strong> {selectedDog.breed}</p>
             <p><strong>Description:</strong> {selectedDog.description}</p>

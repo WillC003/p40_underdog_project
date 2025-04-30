@@ -11,12 +11,12 @@ function HomePage() {
   const navigate = useNavigate();
 
   const galleryImages = [
-    { url: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb', description: 'Happy Dog Walking' },
-    { url: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1', description: 'Professional Care' },
-    { url: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b', description: 'Friendly Companions' },
-    { url: 'https://images.unsplash.com/photo-1552053831-71594a27632d', description: 'Daily Exercise' },
-    { url: 'https://images.unsplash.com/photo-1537151625747-768eb6cf92b', description: 'Group Walks' },
-    { url: 'https://images.unsplash.com/photo-1558947530-cbcf6e9aeeae', description: 'Professional Training' }
+    { url: '/img/gallery1.jpg', description: 'Happy Dog Walking' },
+    { url: '/img/gallery2.jpg', description: 'Professional Care' },
+    { url: '/img/gallery3.jpg', description: 'Friendly Companions' },
+    { url: '/img/adopt.jpg', description: 'Daily Exercise' },
+    { url: '/img/gallery4.jpg', description: 'Group Walks' },
+    { url: '/img/gallery5.jpg', description: 'Professional Training' }
   ];
 
   useEffect(() => {
@@ -89,22 +89,28 @@ function HomePage() {
 
       {/* Services Section */}
       <section className="services">
-        <h2>Our Services</h2>
+        <h2></h2>
         <div className="services-grid">
           <div className="service-card">
             <i className="fas fa-paw"></i>
             <h3>Dog Walking</h3>
-            <p>Professional and caring dog walking services</p>
+            <p>Come help us walk and socialize our dogs</p>
           </div>
           <div className="service-card">
             <i className="fas fa-home"></i>
-            <h3>Pet Sitting</h3>
-            <p>In-home pet care when you're away</p>
+            <h3>Donate</h3>
+            <p>Help our shelter and dogs out by donating</p>
           </div>
           <div className="service-card">
             <i className="fas fa-heart"></i>
-            <h3>Special Care</h3>
-            <p>Customized care for your pet's needs</p>
+            <h3>Adopt</h3>
+            <a 
+               href="https://humanesocietyofmonroe.org/adoptable-pets/" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               className="adoption-link"
+            >
+            Feel free to explore adoption through the monroe humane socioty</a>
           </div>
         </div>
       </section>

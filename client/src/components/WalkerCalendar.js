@@ -16,7 +16,9 @@ function WalkerCalendar() {
   const [showModal, setShowModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [slotBookings, setSlotBookings] = useState([]);
-
+  const [myBookings, setMyBookings] = useState([]);
+ 
+ 
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -38,35 +40,43 @@ function WalkerCalendar() {
     throw new Error('No user logged in');
   };
 
-  const fetchTimeSlots = async () => {
+  const fetchAllCalendarData = async () => {
     try {
       setLoading(true);
       const authHeader = await getAuthHeader();
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots`, authHeader);
-      const formattedSlots = response.data
-      .filter(slot => 
-        (slot.status === 'available' || slot.status === 'booked') &&
-        new Date(slot.start_time) >= new Date() // Only future walks
-      )
+  
+      const myBookingsRes = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots/my-bookings`, authHeader);
+      const bookedSlotIds = myBookingsRes.data.map(slot => slot.id);
+  
+      const slotsRes = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots`, authHeader);
+  
+      const formattedSlots = slotsRes.data
+        .filter(slot => 
+          (slot.status === 'available' || slot.status === 'booked') &&
+          new Date(slot.start_time) >= new Date()
+        )
         .map(slot => ({
           id: slot.id,
-          title: slot.status === 'booked' ? 'Booked' : 'Available',
+          title: bookedSlotIds.includes(slot.id) ? 'Booked' : 'Available',
           start: new Date(slot.start_time),
           end: new Date(slot.end_time),
-          color: slot.status === 'booked' ? '#FFA500' : '#800020',
+          color: bookedSlotIds.includes(slot.id) ? '#FFA500' : '#800020', // no grey logic
           extendedProps: { status: slot.status }
         }));
+  
       setTimeSlots(formattedSlots);
       setError('');
     } catch (err) {
-      console.error('Error fetching time slots:', err);
-      setError('Failed to fetch time slots. Please try again.');
+      console.error('Error fetching calendar data:', err);
+      setError('Failed to load time slots.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchTimeSlots(); }, []);
+  useEffect(() => {
+    fetchAllCalendarData();
+  }, []);
 
   const fetchSlotBookingInfo = async (slotId) => {
     try {
@@ -81,9 +91,17 @@ function WalkerCalendar() {
 
   const handleEventClick = async (info) => {
     const slotId = info.event.id;
-    const bookings = await fetchSlotBookingInfo(slotId);
-    setSelectedSlot(info.event);
-    setSlotBookings(bookings);
+    const bookingInfo = await fetchSlotBookingInfo(slotId);
+  
+    setSelectedSlot({
+      ...info.event,
+      extendedProps: {
+        ...info.event.extendedProps,
+        bookedCount: bookingInfo.count // <-- Set it here
+      }
+    });
+  
+    setSlotBookings(bookingInfo.walkers);
     setShowModal(true);
   };
 
@@ -94,7 +112,7 @@ function WalkerCalendar() {
       await axios.put(`${process.env.REACT_APP_API_URL}/time-slots/${selectedSlot.id}/book`, {}, authHeader);
       setSuccess('Time slot booked successfully!');
       setShowModal(false);
-      await fetchTimeSlots();
+      await fetchAllCalendarData();
     } catch (err) {
       console.error('Error booking time slot:', err.response?.data || err);
       setError(err.response?.data?.error || 'Failed to book time slot. Please try again.');
@@ -166,13 +184,19 @@ function WalkerCalendar() {
             <h2>Confirm Booking</h2>
             <p><strong>Date:</strong> {formatDateTime(selectedSlot.start)}</p>
             <p><strong>Time:</strong> {new Date(selectedSlot.start).toLocaleTimeString()} - {new Date(selectedSlot.end).toLocaleTimeString()}</p>
-            <p><strong>Booked:</strong> {slotBookings.length}/4 spots</p>
+            <p><strong>Booked:</strong> {selectedSlot.extendedProps?.bookedCount || 0}/4 spots</p>
             <h4>Already Booked:</h4>
             <ul>
-              {slotBookings.length > 0 ? slotBookings.map((b, idx) => (
-                <li key={idx}>{b.email}</li>
-              )) : <li>No one booked yet.</li>}
-            </ul>
+  {slotBookings.length > 0 ? (
+    slotBookings.map((walker, idx) => (
+      <li key={idx}>
+        {walker.name} 
+      </li>
+    ))
+  ) : (
+    <li>No one booked yet.</li>
+  )}
+</ul>
             <div className="modal-buttons">
               <button className="confirm-btn" onClick={handleConfirmBooking}>Confirm</button>
               <button className="cancel-btn" onClick={() => setShowModal(false)}>Cancel</button>

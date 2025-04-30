@@ -216,7 +216,12 @@ app.get('/walkers', authenticateUser, async (req, res) => {
 // Time slots routes
 app.get('/time-slots', authenticateUser, async (req, res) => {
   try {
-    const slots = await query('SELECT * FROM time_slots ORDER BY start_time ASC');
+    const slots = await query(`
+      SELECT ts.*, 
+        (SELECT COUNT(*) FROM time_slot_bookings b WHERE b.time_slot_id = ts.id) AS booked_count
+      FROM time_slots ts
+      ORDER BY ts.start_time ASC
+    `);
     res.json(slots);
   } catch (error) {
     console.error('Error fetching time slots:', error);
@@ -288,7 +293,28 @@ app.put('/time-slots/:id/book', authenticateUser, authorizeRoles(['walker']), as
     if (slot[0].status === 'available') {
       await query('UPDATE time_slots SET status = "booked" WHERE id = ?', [id]);
     }
+    const cron = require('node-cron');
+    const sendEmail = require('./mailer');
 
+    cron.schedule('0 * * * *', async () => { // runs every hour
+    const upcoming = await query(`
+      SELECT b.walker_id, ts.start_time, u.email, u.name
+      FROM time_slot_bookings b
+      JOIN time_slots ts ON b.time_slot_id = ts.id
+      JOIN users u ON b.walker_id = u.id
+      WHERE ts.start_time BETWEEN NOW() + INTERVAL 24 HOUR AND NOW() + INTERVAL 25 HOUR
+  ` );
+
+    for (const entry of upcoming) {
+      await sendEmail({
+        to: entry.email,
+      subject: `Reminder: Upcoming Walk`,
+      text: `Hi ${entry.name}, this is a reminder that you have a walk scheduled on ${new Date(entry.start_time).toLocaleString()}.`
+      });
+    }
+
+    console.log('Reminder emails sent:', upcoming.length);
+    });
     res.json({ message: 'Booking successful' });
   } catch (error) {
     console.error('Booking error:', error);
@@ -296,19 +322,35 @@ app.put('/time-slots/:id/book', authenticateUser, authorizeRoles(['walker']), as
   }
 });
 
-app.get('/time-slots/:id/bookings', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
+app.get('/time-slots/:id/bookings', authenticateUser, async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Step 1: Get walker IDs from SQL
     const bookings = await query('SELECT walker_id FROM time_slot_bookings WHERE time_slot_id = ?', [id]);
 
-    const usersRef = admin.firestore().collection('users');
-    const walkers = await Promise.all(bookings.map(async (b) => {
-      const doc = await usersRef.doc(b.walker_id).get();
-      return doc.exists ? { id: b.walker_id, ...doc.data() } : null;
-    }));
+    if (bookings.length === 0) {
+      return res.json({ count: 0, walkers: [] });
+    }
 
-    res.json(walkers.filter(w => w !== null));
+    // Step 2: For each walker_id, fetch user info from Firestore
+    const usersRef = admin.firestore().collection('users');
+    const walkers = await Promise.all(
+      bookings.map(async (b) => {
+        const doc = await usersRef.doc(b.walker_id).get();
+        if (doc.exists) {
+          const user = doc.data();
+          return { id: b.walker_id, name: user.name || 'Unknown', email: user.email || 'No Email' };
+        } else {
+          return null;
+        }
+      })
+    );
+
+    res.json({
+      count: walkers.filter(Boolean).length,
+      walkers: walkers.filter(Boolean)
+    });
   } catch (error) {
     console.error('Failed to fetch slot bookings:', error);
     res.status(500).json({ error: 'Could not load bookings' });
