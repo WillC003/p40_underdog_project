@@ -114,7 +114,7 @@ const authorizeRoles = (roles) => {
 // API Routes
 
 // Dogs routes
-app.get('/dogs', authenticateUser, async (req, res) => {
+app.get('/api/dogs', authenticateUser, async (req, res) => {
   try {
     const results = await query('SELECT * FROM dogs');
 
@@ -132,7 +132,7 @@ app.get('/dogs', authenticateUser, async (req, res) => {
 });
 
 // Updated POST /dogs
-app.post('/dogs', authenticateUser, authorizeRoles(['admin', 'marshal']), upload.single('image'), async (req, res) => {
+app.post('/api/dogs', authenticateUser, authorizeRoles(['admin', 'marshal']), upload.single('image'), async (req, res) => {
   const { name, breed, description, grade } = req.body;
   const image = req.file?.buffer; // get binary data from uploaded file
 
@@ -153,7 +153,7 @@ app.post('/dogs', authenticateUser, authorizeRoles(['admin', 'marshal']), upload
   }
 });
 
-app.delete('/dogs/:id', authenticateUser, authorizeRoles(['admin', 'marshal']), async (req, res) => {
+app.delete('/api/dogs/:id', authenticateUser, authorizeRoles(['admin', 'marshal']), async (req, res) => {
   const { id } = req.params;
   try {
     await query('DELETE FROM dogs WHERE id = ?', [id]);
@@ -165,7 +165,7 @@ app.delete('/dogs/:id', authenticateUser, authorizeRoles(['admin', 'marshal']), 
 });
 
 // Updated PUT /dogs/:id
-app.put('/dogs/:id', authenticateUser, authorizeRoles(['admin', 'marshal']), upload.single('image'), async (req, res) => {
+app.put('/api/dogs/:id', authenticateUser, authorizeRoles(['admin', 'marshal']), upload.single('image'), async (req, res) => {
   const { id } = req.params;
   const { name, breed, description, grade } = req.body;
   const image = req.file?.buffer;
@@ -214,7 +214,7 @@ app.get('/walkers', authenticateUser, async (req, res) => {
 });
 
 // Time slots routes
-app.get('/time-slots', authenticateUser, async (req, res) => {
+app.get('/api/time-slots', authenticateUser, async (req, res) => {
   try {
     const slots = await query(`
       SELECT ts.*, 
@@ -229,7 +229,7 @@ app.get('/time-slots', authenticateUser, async (req, res) => {
   }
 });
 
-app.post('/time-slots', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
+app.post('/api/time-slots', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
   const { start_time, end_time } = req.body;
 
   console.log('Received time slot:', {
@@ -266,7 +266,7 @@ app.post('/time-slots', authenticateUser, authorizeRoles(['marshal']), async (re
   }
 });
 
-app.put('/time-slots/:id/book', authenticateUser, authorizeRoles(['walker']), async (req, res) => {
+app.put('/api/time-slots/:id/book', authenticateUser, authorizeRoles(['walker']), async (req, res) => {
   const { id } = req.params;
   const walkerId = req.user.uid;
 
@@ -322,7 +322,7 @@ app.put('/time-slots/:id/book', authenticateUser, authorizeRoles(['walker']), as
   }
 });
 
-app.get('/time-slots/:id/bookings', authenticateUser, async (req, res) => {
+app.get('/api/time-slots/:id/bookings', authenticateUser, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -357,7 +357,7 @@ app.get('/time-slots/:id/bookings', authenticateUser, async (req, res) => {
   }
 });
 
-app.delete('/time-slots/:id', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
+app.delete('/api/time-slots/:id', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -369,7 +369,7 @@ app.delete('/time-slots/:id', authenticateUser, authorizeRoles(['marshal']), asy
   }
 });
 
-app.get('/time-slots/upcoming', authenticateUser, async (req, res) => {
+app.get('/api/time-slots/upcoming', authenticateUser, async (req, res) => {
   try {
     const slots = await query(`
       SELECT ts.*
@@ -385,7 +385,7 @@ app.get('/time-slots/upcoming', authenticateUser, async (req, res) => {
 });
 
 
-app.get('/time-slots/my-bookings', authenticateUser, async (req, res) => {
+app.get('/api/time-slots/my-bookings', authenticateUser, async (req, res) => {
   try {
     const walkerId = req.user.uid;
     const bookings = await query(`
@@ -403,7 +403,7 @@ app.get('/time-slots/my-bookings', authenticateUser, async (req, res) => {
 });
 
 // Walks routes
-app.get('/walks', authenticateUser, async (req, res) => {
+app.get('/api/walks', authenticateUser, async (req, res) => {
   try {
     const { type, range } = req.query;
     let sqlQuery = `
@@ -477,7 +477,7 @@ app.get('/walks', authenticateUser, async (req, res) => {
   }
 });
 
-app.post('/walks', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
+app.post('/api/walks', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
   const { timeSlotId, walkerIds, dogIds, notes } = req.body;
 
   if (!timeSlotId || !walkerIds?.length || !dogIds?.length) {
@@ -509,7 +509,7 @@ app.post('/walks', authenticateUser, authorizeRoles(['marshal']), async (req, re
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
@@ -537,7 +537,7 @@ app.get('/test-db', async (req, res) => {
   }
 });
 
-app.post('/time-slots/:id/assign-dogs', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
+app.post('/api/time-slots/:id/assign-dogs', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
   const { dogIds } = req.body;
   const { id } = req.params;
 
@@ -559,7 +559,7 @@ app.post('/time-slots/:id/assign-dogs', authenticateUser, authorizeRoles(['admin
   }
 });
 
-app.get('/time-slots/:id/assigned-dogs', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
+app.get('/api/time-slots/:id/assigned-dogs', authenticateUser, authorizeRoles(['marshal']), async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -578,7 +578,7 @@ app.get('/time-slots/:id/assigned-dogs', authenticateUser, authorizeRoles(['mars
   }
 });
 
-app.get('/time-slots/:id/bookings', authenticateUser, async (req, res) => {
+app.get('/api/time-slots/:id/bookings', authenticateUser, async (req, res) => {
   const timeSlotId = req.params.id;
 
   try {
@@ -596,7 +596,7 @@ app.get('/time-slots/:id/bookings', authenticateUser, async (req, res) => {
   }
 });
 
-app.get('/upcoming-walks', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
+app.get('/api/upcoming-walks', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
   try {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
@@ -629,7 +629,7 @@ app.get('/upcoming-walks', authenticateUser, authorizeRoles(['admin']), async (r
   }
 });
 
-app.get('/dog-walk-stats', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
+app.get('/api/dog-walk-stats', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
   try {
     const stats = await query(`
       SELECT 
@@ -653,7 +653,7 @@ app.get('/dog-walk-stats', authenticateUser, authorizeRoles(['admin']), async (r
   }
 });
 
-app.post('/block-day', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
+app.post('/api/block-day', authenticateUser, authorizeRoles(['admin']), async (req, res) => {
   const { date } = req.body; // e.g., "2025-05-10"
 
   const startTime = `${date} 00:00:00`;
