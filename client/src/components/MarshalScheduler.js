@@ -56,7 +56,7 @@ function MarshalScheduler() {
       const authHeader = await getAuthHeader();
   
       const walkerRes = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots/${slot.id}/bookings`, authHeader);
-      setSelectedWalkers(walkerRes.data);
+      setSelectedWalkers(walkerRes.data.walkers || []);
   
       const dogRes = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots/${slot.id}/assigned-dogs`, authHeader);
       setAssignedDogs(dogRes.data);
@@ -425,8 +425,7 @@ function MarshalScheduler() {
             
                 // Fetch walkers
                 const walkerRes = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots/${info.event.id}/bookings`, authHeader);
-                setSelectedWalkers(walkerRes.data);
-            
+                setSelectedWalkers(walkerRes.data.walkers || []);
                 // Fetch assigned dogs
                 const dogRes = await axios.get(`${process.env.REACT_APP_API_URL}/time-slots/${info.event.id}/assigned-dogs`, authHeader);
                 setAssignedDogs(dogRes.data); // ← Add this state if not yet created

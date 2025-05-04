@@ -182,8 +182,8 @@ function AdminReports() {
                           <strong>{new Date(walk.start_time).toLocaleString()}</strong><br />
                           {new Date(walk.end_time).toLocaleTimeString()}
                         </td>
-                        <td>{walk.dog_name} ({walk.dog_breed})</td>
-                        <td>{walk.walker_name || 'Unknown'}</td>
+                        <td>{walk.dogs}</td>
+                        <td>{walk.walker_names?.join(', ')}</td>
                         <td>{walk.marshal_name || 'Unknown'}</td>
                         <td>{walk.status}</td>
                         <td>{walk.notes || '—'}</td>
@@ -225,8 +225,8 @@ function AdminReports() {
             <p><strong>Date:</strong> {new Date(selectedWalk.start_time).toLocaleString()}</p>
             <p><strong>Time:</strong> {new Date(selectedWalk.start_time).toLocaleTimeString()} – {new Date(selectedWalk.end_time).toLocaleTimeString()}</p>
             <p><strong>Marshal:</strong> {selectedWalk.marshal_name || 'Unknown'}</p>
-            <p><strong>Walker:</strong> {selectedWalk.walker_name || 'Unknown'}</p>
-            <p><strong>Dog:</strong> {selectedWalk.dog_name} ({selectedWalk.dog_breed})</p>
+            <p><strong>Walker(s):</strong> {selectedWalk.walker_names?.join(', ') || 'Unknown'}</p>
+            <p><strong>Dog(s):</strong> {selectedWalk.dogs || 'Unknown'}</p>
             {selectedWalk.notes && (
               <p><strong>Notes:</strong><br />{selectedWalk.notes}</p>
             )}
